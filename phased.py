@@ -18,8 +18,9 @@ class PhasedLSTM(tf.keras.layers.Layer):
                  period_init_min=1.0,
                  period_init_max=1000.0,
                  rec_activation = tf.math.sigmoid,
-                 out_activation = tf.math.tanh):
-        super(PhasedLSTM, self).__init__()
+                 out_activation = tf.math.tanh,
+                 name='plstm'):
+        super(PhasedLSTM, self).__init__(name=name)
         self.units = units
         self._leak = leak_rate
         self._ratio_on = ratio_on
