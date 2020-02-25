@@ -11,23 +11,25 @@ with open('data/linear.pkl', 'rb') as handle:
 
 data_object = DataPreprocessing(light_curves, labels=labels)
 data_object.pad_series()
-data_object.standardize()
-dataset = data_object.train_test_val_split(val=0.25, test=0.25)
+dataset = data_object.train_test_val_split(val=0.25,
+                                           test=0.25,
+                                           max_obs=200)
 
 print(dataset['train']['x'].shape)
 print(dataset['validation']['x'].shape)
+print(dataset['test']['x'].shape)
 
 train_iterator = data_object.get_iterator(dataset['train']['x'][...,1:],
                                           dataset['train']['x'][...,0],
                                           dataset['train']['y'],
                                           dataset['train']['l'],
-                                          batch_size=100)
+                                          batch_size=150)
 
 val_iterator = data_object.get_iterator(dataset['validation']['x'][...,1:],
                                         dataset['validation']['x'][...,0],
                                         dataset['validation']['y'],
                                         dataset['validation']['l'],
-                                        batch_size=100)
+                                        batch_size=150)
 
 
 n_classes = len(np.unique(data_object.y))

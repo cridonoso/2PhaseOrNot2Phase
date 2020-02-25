@@ -53,13 +53,16 @@ class RNNClassifier(tf.keras.Model):
     def fit(self, train, val, epochs, patience=5):
         t0 = time.time()
         for epoch in range(epochs):
+            count=0
             for batch in train:
+                print(count)
                 with tf.GradientTape() as tape:
                     y_pred = self(batch[0], batch[1])
                     loss_value = self.get_loss(batch[2], y_pred, batch[3])
                 grads = tape.gradient(loss_value, self.trainable_weights)
                 self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
-
+                count+=1
+                
             val_losses = []
             for val_batch in val:
                 y_pred = self(val_batch[0], val_batch[1])
