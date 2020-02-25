@@ -21,6 +21,16 @@ class DataPreprocessing(object):
                                padding='post',
                                value=value)
 
+    def get_mask(self, lens):
+        print('[INFO] Processing mask, please wait ...')
+        mask_list = tf.TensorArray(tf.float32, size=lens.shape[0])
+        for index in tf.range(lens.shape[0]):
+            valid = tf.ones(lens[index], dtype=tf.float32)
+            no_valid = tf.zeros(self.maxlen-lens[index], dtype=tf.float32)
+            mask = tf.concat([valid, no_valid], axis=0)
+            mask_list.write(index, mask)
+        return mask_list.stack()
+
     def split_series(self, x, y, lens_list, max_obs):
         offset = max_obs - (self.maxlen % max_obs)
         to_add = tf.zeros([x.shape[0], offset, x.shape[2]])
@@ -92,17 +102,19 @@ class DataPreprocessing(object):
                                                self.y[train_ind+val_ind:],
                                                self.l[train_ind+val_ind:],
                                                max_obs)
+            self.maxlen = max_obs
+
             return {'train':{'x': train_x,
                              'y': train_y,
-                             'l': train_l,
+                             'l': self.get_mask(train_l),
                              'i': train_i},
                     'validation':{'x': val_x,
                                   'y': val_y,
-                                  'l': val_l,
+                                  'l': self.get_mask(val_l),
                                   'i': val_i},
                     'test':{'x': test_x,
                             'y': test_y,
-                            'l': test_l,
+                            'l': self.get_mask(test_l),
                             'i': test_i}}
 
     def get_iterator(self, *args, batch_size=10):

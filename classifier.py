@@ -28,26 +28,24 @@ class RNNClassifier(tf.keras.Model):
                     tf.zeros([inputs.shape[0], self._units]))
 
         predictions = tf.TensorArray(tf.float32, size=inputs.shape[1])
+
         for step in tf.range(inputs.shape[1]):
             output_0, states_0 = self.plstm_0(inputs[:,step,:], times[:,step], states_0)
             output_1, states_1 = self.plstm_1(output_0, times[:,step], states_1)
             y_pred = self.fc(output_1)
             predictions = predictions.write(step, y_pred)
+
         return tf.transpose(predictions.stack(), [1,0,2])
 
     @tf.function
-    def get_loss(self, y_true, y_pred, lens):
+    def get_loss(self, y_true, y_pred, lengths):
         y_one_hot = tf.one_hot(y_true, self.n_classes)
-        losses_final = tf.TensorArray(tf.float32, size=y_pred.shape[0])
-        for index in tf.range(y_pred.shape[0]):
-            valids = y_pred[index][0:lens[index], :]
-            losses = tf.TensorArray(tf.float32, size=lens[index])
-            for v in tf.range(lens[index]):
-                partial_loss = categorical_crossentropy(y_one_hot[index], valids[v])
-                losses = losses.write(v, partial_loss)
-            loss_lc = tf.reduce_sum(losses.stack())
-            losses_final = losses_final.write(index, loss_lc)
-        return tf.reduce_mean(losses_final.stack())
+        sum_losses = tf.zeros(lengths.shape[0])
+        for step in tf.range(lengths.shape[1]):
+            loss = categorical_crossentropy(y_one_hot, y_pred[:, step, :])
+            value = loss * lengths[:,step]
+            sum_losses+=value
+        return tf.reduce_mean(sum_losses)
 
 
     def fit(self, train, val, epochs, patience=5):
@@ -59,7 +57,7 @@ class RNNClassifier(tf.keras.Model):
                     loss_value = self.get_loss(batch[2], y_pred, batch[3])
                 grads = tape.gradient(loss_value, self.trainable_weights)
                 self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
-
+            print('validation')
             val_losses = []
             for val_batch in val:
                 y_pred = self(val_batch[0], val_batch[1])
