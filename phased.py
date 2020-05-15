@@ -69,7 +69,9 @@ class PhasedLSTM(tf.keras.layers.Layer):
                                         shape=[self.units],
                                         initializer=constant_initializer(self._ratio_on),
                                         trainable=True)
-    @tf.function
+
+        self.layer_norm = tf.keras.layers.LayerNormalization()
+
     def call(self, input, times, states):
         cg, fg, sg, og = tf.unstack(self.kernel, 4, axis=0)
         c_prev, h_prev = states
@@ -78,15 +80,19 @@ class PhasedLSTM(tf.keras.layers.Layer):
         # RECURRENT GATES
         # =================================
         ca = tf.linalg.matmul(concat_input, cg)
+        ca = self.layer_norm(ca)
         ca = self._out_activation(ca)
 
         fa = tf.linalg.matmul(concat_input, fg)
+        fa = self.layer_norm(fa)
         fa = self._rec_activation(fa)
 
         sa = tf.linalg.matmul(concat_input, sg)
+        sa = self.layer_norm(sa)
         sa = self._rec_activation(sa)
 
         oa = tf.linalg.matmul(concat_input, og)
+        oa = self.layer_norm(oa)
         oa = self._rec_activation(oa)
 
         # =================================
@@ -110,6 +116,7 @@ class PhasedLSTM(tf.keras.layers.Layer):
         # UPDATE STATE USING TIME GATE VALUES
         # =================================
         new_c = k * cell_state + (1 - k) * c_prev
+        new_c = self.layer_norm(new_c)
         new_h = k * hidden_state + (1 - k) * h_prev
 
         return new_h, (new_c, new_h)
