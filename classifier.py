@@ -24,29 +24,12 @@ class RNNClassifier(tf.keras.Model):
 
         self.plstm_0 = PhasedLSTM(self._units, name='rnn_0')
         self.plstm_1 = PhasedLSTM(self._units, name='rnn_1')
-        self.fc = tf.keras.layers.Dense(5,
+        self.fc = tf.keras.layers.Dense(11,
                                         activation='softmax',
                                         dtype='float32')
         self.dropout = tf.keras.layers.Dropout(dropout)
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
-
-    # def while_loop_rnn(rnn_cell, x):
-    #     initial_state = rnn_cell.zero_state(tf.shape(x)[0], tf.float32)
-    #     x_t = tf.transpose(x, [1, 0, 2])
-
-    #     def compute(i, cur_state, out):
-    #         output, cur_state = rnn_cell(x_t[i], cur_state)
-    #         return i+1, cur_state, out.write(i, output)
-
-    #     time = tf.shape(x_t)[0]
-
-    #     _, cur_state, out = tf.while_loop(
-    #         lambda a, b, c: a < time,
-    #         compute,
-    #         (0, initial_state, tf.TensorArray(tf.float32, time))
-    #     )
-    #     return tf.transpose(out.stack(), [1, 0, 2]), cur_state
         
     @tf.function
     def call(self, inputs, times, training=False):
@@ -56,17 +39,53 @@ class RNNClassifier(tf.keras.Model):
         states_1 = (tf.zeros([inputs.shape[0], self._units]),
                     tf.zeros([inputs.shape[0], self._units]))
 
+        initial_state = (states_0, states_1)
+
         predictions = tf.TensorArray(tf.float32, size=inputs.shape[1])
 
-        for step in tf.range(inputs.shape[1]):
-            output_0, states_0 = self.plstm_0(inputs[:,step,:], times[:,step], states_0)
-            output_0 = self.dropout(output_0, training=training)
-            output_1, states_1 = self.plstm_1(output_0, times[:,step], states_1)
-            output_1 = self.dropout(output_1, training=training)
-            y_pred = self.fc(output_1)
-            predictions = predictions.write(step, y_pred)
+        x_t = tf.transpose(inputs, [1, 0, 2])
+        t_t = tf.transpose(times, [1, 0])
+        
+        time_steps = tf.shape(x_t)[0]
 
-        return tf.transpose(predictions.stack(), [1,0,2])
+        def compute(i, cur_state, out):
+            output_0, cur_state0 = self.plstm_0(x_t[i], t_t[i], cur_state[0])
+            output_1, cur_state1 = self.plstm_1(output_0, t_t[i], cur_state[1])
+            output_2 = self.dropout(output_1)
+            return tf.add(i, 1), (cur_state0, cur_state1), out.write(i, self.fc(output_2))
+
+        start_time = time.time()
+        _, cur_state, out = tf.while_loop(
+            lambda a, b, c: a < time_steps,
+            compute,
+            (tf.constant(0), initial_state, tf.TensorArray(tf.float32, time_steps))
+        )
+        end_time = time.time()
+        tf.print('takes: {} sec'.format(end_time-start_time))
+
+        return tf.transpose(out.stack(), [1,0,2])
+
+    # @tf.function
+    # def call(self, inputs, times, training=False):
+    #     states_0 = (tf.zeros([inputs.shape[0], self._units]),
+    #                 tf.zeros([inputs.shape[0], self._units]))
+
+    #     states_1 = (tf.zeros([inputs.shape[0], self._units]),
+    #                 tf.zeros([inputs.shape[0], self._units]))
+
+    #     predictions = tf.TensorArray(tf.float32, size=inputs.shape[1])
+
+    #     start_time = time.time()
+    #     for step in tf.range(inputs.shape[1]):
+    #         output_0, states_0 = self.plstm_0(inputs[:,step,:], times[:,step], states_0)
+    #         output_1, states_1 = self.plstm_1(output_0, times[:,step], states_1)
+    #         output_1 = self.dropout(output_1, training=training)
+    #         y_pred = self.fc(output_1)
+    #         predictions = predictions.write(step, y_pred)
+    #     end_time = time.time()
+
+    #     tf.print('takes: {} sec'.format(end_time-start_time))
+    #     return tf.transpose(predictions.stack(), [1,0,2])
 
     @tf.function
     def get_loss(self, y_true, y_pred, masks):
@@ -97,7 +116,7 @@ class RNNClassifier(tf.keras.Model):
                 with tf.GradientTape() as tape:
                     y_pred = self(train_batch[0], train_batch[0][...,0], training=True)
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
-
+                    tf.print(loss_value)
                 grads = tape.gradient(loss_value, self.trainable_weights)
                 self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
 
@@ -129,21 +148,21 @@ class RNNClassifier(tf.keras.Model):
         t0 = time.time()
         test_losses = []
         predictions = []
-
+        true_labels = []
         for test_batch in test_batches:
             y_pred = self(test_batch[0], test_batch[0][...,0])
             loss_value = self.get_loss(test_batch[1], y_pred, test_batch[2])
             test_losses.append(loss_value)
             predictions.append(mask_pred(y_pred, test_batch[2]))
-
+            true_labels.append(test_batch[1])
         avg_epoch_loss_val = tf.reduce_mean(test_losses).numpy()
 
 
         t1 = time.time()
         print('runtime {:.2f}'.format((t1-t0)))
         predictions = tf.concat(predictions, 0)
-
-        return predictions, avg_epoch_loss_val
+        true_labels = tf.concat(true_labels, 0)
+        return predictions, true_labels, avg_epoch_loss_val
 
 
     def load_ckpt(self, ckpt_path):
