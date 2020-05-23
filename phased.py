@@ -41,20 +41,20 @@ class PhasedLSTM(tf.keras.layers.Layer):
         shifted_time = time - phase_casted
         cycle_ratio = self._mod(shifted_time, period_casted)
         cycle_ratio = self._mod(shifted_time, period_casted) / period_casted
-        return tf.cast(cycle_ratio, dtype=tf.float32)
+        return cycle_ratio#tf.cast(cycle_ratio, dtype=tf.float32)
 
     def build(self, input_shape):
         self.kernel = self.add_weight(
                         name="kernel",
                         shape=[4, input_shape[-1]+self.units, self.units],
-                        dtype=tf.float32,
+                        #dtype=tf.float32,
                         initializer=tf.keras.initializers.GlorotNormal(),
                         trainable=True)
 
         self.period = self.add_weight(
                         name="period",
                         shape=[self.units],
-                        dtype=tf.float32,
+                        #dtype=tf.float32,
                         initializer=_exponential_initializer(
                                             self.period_init_min,
                                             self.period_init_max),

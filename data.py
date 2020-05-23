@@ -44,10 +44,11 @@ def load_record(path, batch_size):
         [tensorflow dataset] -- [batches to feed the model]
     """
     dataset = tf.data.TFRecordDataset(path)
-    dataset = dataset.map(lambda x: read_tfrecord(x))
+    dataset = dataset.map(lambda x: read_tfrecord(x), 
+                          num_parallel_calls=tf.data.experimental.AUTOTUNE)
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache
     dataset = dataset.cache() 
     batches = dataset.batch(batch_size)
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#prefetch
-    batches = batches.prefetch(buffer_size=1)
+    dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return batches
