@@ -17,15 +17,20 @@ def mask_pred(y_pred, mask):
     tensor_first = y_pred * tf.expand_dims(mask, 2)
     return tensor_first + tensor_last
 
+def add_scalar_log(value, writer, step, name):
+    with writer.as_default():
+        tf.summary.scalar(name, value, step=step)
+
 # =====================================================
 # ================= PHASED CLASSIFIER =================
 # =====================================================
 class PhasedClassifier(tf.keras.Model):
 
-    def __init__(self, units, n_classes, dropout=0.5):
+    def __init__(self, units, n_classes, dropout=0.5, name='phased'):
         super(PhasedClassifier, self).__init__()
         self._cells = []
         self._units = units
+        self._name  = name
 
         self.plstm_0 = PhasedLSTM(self._units, name='rnn_0')
         self.plstm_1 = PhasedLSTM(self._units, name='rnn_1')
@@ -78,7 +83,22 @@ class PhasedClassifier(tf.keras.Model):
         cumulated_loss = tf.reduce_sum(masked_loss, 1)
         return tf.reduce_mean(cumulated_loss)
 
+    @tf.function
+    def get_acc(self, y_true, y_pred, masks):
+        last = tf.cast(tf.reduce_sum(masks, 1), tf.int32)-1
+        last = tf.stack([tf.range(last.shape[0]), last], 1)
+        last_probas  = tf.gather_nd(y_pred, last)
+        acc = tf.keras.metrics.categorical_accuracy(y_true, last_probas)
+        return tf.reduce_mean(acc)
+
     def fit(self, train, val, epochs, patience=5, save_path='.'):
+
+        # Tensorboard 
+        train_log_dir = '{}/{}/logs/train'.format(save_path, self._name)
+        test_log_dir  = '{}/{}/logs/val'.format(save_path, self._name)
+        train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+        test_summary_writer = tf.summary.create_file_writer(test_log_dir)
+
 
         # Define checkpoints
         ckpt = tf.train.Checkpoint(step=tf.Variable(1),
@@ -86,33 +106,48 @@ class PhasedClassifier(tf.keras.Model):
                                    optimizer=self.optimizer)
 
         manager = tf.train.CheckpointManager(ckpt,
-                                             save_path+'/phased_{}'.format(self._units)+'/ckpts',
+                                             save_path+'/{}'.format(self._name)+'/ckpts',
                                              max_to_keep=1)
         # Training variables
         best_loss = 9999999
         early_stop_count = 0
-
+        iter_count = 0 # each forward pass is an iteration
+        curr_eta = 0.
         for epoch in range(epochs):
+            print('[INFO] RUNNING EPOCH {}/{} - EARLY STOP COUNTDOWN: {} - ETA:{:.1f} sec'.format(epoch, epochs, patience-early_stop_count, curr_eta), end='\r')
             t0 = time.time()
             for train_batch in train:
                 with tf.GradientTape() as tape:
                     y_pred = self(train_batch[0], train_batch[0][...,0], training=True)
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
+                    acc_value = self.get_acc(train_batch[1], y_pred, train_batch[2])
+
+                add_scalar_log(acc_value, train_summary_writer, iter_count, 'accuracy')
+                add_scalar_log(loss_value, train_summary_writer, iter_count, 'loss')
 
                 grads = tape.gradient(loss_value, self.trainable_weights)
                 self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
+                iter_count+=1
 
-            print('validation')
-
+            
             val_losses = []
+            val_accura = []
             for val_batch in val:
                 y_pred = self(val_batch[0], val_batch[0][...,0])
                 loss_value = self.get_loss(val_batch[1], y_pred, val_batch[2])
+                acc_value  = self.get_acc(val_batch[1], y_pred, val_batch[2])
+
                 val_losses.append(loss_value)
+                val_accura.append(acc_value)
 
             t1 = time.time()
-            avg_epoch_loss_val = tf.reduce_mean(val_losses).numpy()
-            print('({:.2f} sec) Epoch: {} -  val loss: {:.2f}'.format((t1-t0), epoch, avg_epoch_loss_val))
+            curr_eta = (t1 - t0)*(epochs-epoch+1)
+
+            avg_epoch_loss_val = tf.reduce_mean(val_losses)
+            avg_epoch_accu_val = tf.reduce_mean(val_accura)
+
+            add_scalar_log(avg_epoch_loss_val, test_summary_writer, iter_count, 'loss')
+            add_scalar_log(avg_epoch_accu_val, test_summary_writer, iter_count, 'accuracy')
 
             # EARLY STOPPING
             if  avg_epoch_loss_val < best_loss:
@@ -165,10 +200,11 @@ class PhasedClassifier(tf.keras.Model):
 # =====================================================
 class LSTMClassifier(tf.keras.Model):
 
-    def __init__(self, units, n_classes,dropout=0.5):
+    def __init__(self, units, n_classes, dropout=0.5, name='phased'):
         super(LSTMClassifier, self).__init__()
         self._units = units
-
+        self._name  = name
+        
         self.lstm_0 = LSTM(self._units, dropout=dropout, return_sequences=True, name='rnn_0')
         self.lstm_1 = LSTM(self._units, dropout=dropout, return_sequences=True, name='rnn_1')
         
@@ -210,8 +246,22 @@ class LSTMClassifier(tf.keras.Model):
         masked_loss = loss * masks
         cumulated_loss = tf.reduce_sum(masked_loss, 1)
         return tf.reduce_mean(cumulated_loss)
+    
+    @tf.function
+    def get_acc(self, y_true, y_pred, masks):
+        last = tf.cast(tf.reduce_sum(masks, 1), tf.int32)-1
+        last = tf.stack([tf.range(last.shape[0]), last], 1)
+        last_probas  = tf.gather_nd(y_pred, last)
+        acc = tf.keras.metrics.categorical_accuracy(y_true, last_probas)
+        return tf.reduce_mean(acc)
 
     def fit(self, train, val, epochs, patience=5, save_path='.'):
+        
+        # Tensorboard 
+        train_log_dir = '{}/{}/logs/train'.format(save_path, self._name)
+        test_log_dir  = '{}/{}/logs/val'.format(save_path, self._name)
+        train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+        test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
         # Define checkpoints
         ckpt = tf.train.Checkpoint(step=tf.Variable(1),
@@ -219,33 +269,47 @@ class LSTMClassifier(tf.keras.Model):
                                    optimizer=self.optimizer)
 
         manager = tf.train.CheckpointManager(ckpt,
-                                             save_path+'/phased_{}'.format(self._units)+'/ckpts',
+                                             save_path+'/{}'.format(self._name)+'/ckpts',
                                              max_to_keep=1)
         # Training variables
         best_loss = 9999999
         early_stop_count = 0
-
+        iter_count = 0 # each forward pass is an iteration
+        curr_eta = 0.
         for epoch in range(epochs):
+            print('[INFO] RUNNING EPOCH {}/{} - EARLY STOP COUNTDOWN: {} - ETA:{:.1f} sec'.format(epoch, epochs, patience-early_stop_count, curr_eta), end='\r')
             t0 = time.time()
             for train_batch in train:
                 with tf.GradientTape() as tape:
                     y_pred = self(train_batch[0], train_batch[2], training=True)
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
+                    acc_value = self.get_acc(train_batch[1], y_pred, train_batch[2])
+                
+                add_scalar_log(acc_value, train_summary_writer, iter_count, 'accuracy')
+                add_scalar_log(loss_value, train_summary_writer, iter_count, 'loss')
 
                 grads = tape.gradient(loss_value, self.trainable_weights)
                 self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
-
-            print('validation')
-
+                iter_count+=1 
+                
             val_losses = []
+            val_accura = []
             for val_batch in val:
                 y_pred = self(val_batch[0], val_batch[2])
                 loss_value = self.get_loss(val_batch[1], y_pred, val_batch[2])
+                acc_value  = self.get_acc(val_batch[1], y_pred, val_batch[2])
+                val_accura.append(acc_value)
                 val_losses.append(loss_value)
 
             t1 = time.time()
-            avg_epoch_loss_val = tf.reduce_mean(val_losses).numpy()
-            print('({:.2f} sec) Epoch: {} -  val loss: {:.2f}'.format((t1-t0), epoch, avg_epoch_loss_val))
+            
+            curr_eta = (t1 - t0)*(epochs-epoch+1)
+
+            avg_epoch_loss_val = tf.reduce_mean(val_losses)
+            avg_epoch_accu_val = tf.reduce_mean(val_accura)
+
+            add_scalar_log(avg_epoch_loss_val, test_summary_writer, iter_count, 'loss')
+            add_scalar_log(avg_epoch_accu_val, test_summary_writer, iter_count, 'accuracy')
 
             # EARLY STOPPING
             if  avg_epoch_loss_val < best_loss:
