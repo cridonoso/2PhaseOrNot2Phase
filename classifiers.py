@@ -98,7 +98,7 @@ class PhasedClassifier(tf.keras.Model):
                 with tf.GradientTape() as tape:
                     y_pred = self(train_batch[0], train_batch[0][...,0], training=True)
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
-                    tf.print(loss_value)
+
                 grads = tape.gradient(loss_value, self.trainable_weights)
                 self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
 
@@ -229,7 +229,7 @@ class LSTMClassifier(tf.keras.Model):
                 with tf.GradientTape() as tape:
                     y_pred = self(train_batch[0], train_batch[2], training=True)
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
-                    tf.print(loss_value)
+
                 grads = tape.gradient(loss_value, self.trainable_weights)
                 self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
 
