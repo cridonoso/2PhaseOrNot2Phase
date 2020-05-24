@@ -58,14 +58,14 @@ class PhasedClassifier(tf.keras.Model):
             output_2 = self.dropout(output_1)
             return tf.add(i, 1), (cur_state0, cur_state1), out.write(i, self.fc(output_2))
 
-        start_time = time.time()
+        # start_time = time.time()
         _, cur_state, out = tf.while_loop(
             lambda a, b, c: a < time_steps,
             compute,
             (tf.constant(0), initial_state, tf.TensorArray(tf.float32, time_steps))
         )
-        end_time = time.time()
-        tf.print('takes: {} sec'.format(end_time-start_time))
+        # end_time = time.time()
+        # tf.print('takes: {} sec'.format(end_time-start_time))
 
         return tf.transpose(out.stack(), [1,0,2])
 
@@ -186,7 +186,7 @@ class LSTMClassifier(tf.keras.Model):
         state_1 = (tf.zeros([inputs.shape[0], self._units]),
                    tf.zeros([inputs.shape[0], self._units]))
 
-        start_time = time.time()
+        # start_time = time.time()
 
         masks = tf.cast(masks, tf.bool)
 
@@ -195,8 +195,8 @@ class LSTMClassifier(tf.keras.Model):
 
         out = self.fc(output_1)
 
-        end_time = time.time()
-        tf.print('takes: {} sec'.format(end_time-start_time))
+        # end_time = time.time()
+        # tf.print('takes: {} sec'.format(end_time-start_time))
 
         return out
 
