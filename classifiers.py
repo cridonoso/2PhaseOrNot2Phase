@@ -1,7 +1,7 @@
 import tensorflow as tf
 from phased import PhasedLSTM
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.layers import LSTM, RNN 
+from tensorflow.keras.layers import LSTM, RNN, LayerNormalization
 import numpy as np
 import time
 
@@ -176,6 +176,7 @@ class LSTMClassifier(tf.keras.Model):
                                         activation='softmax',
                                         dtype='float32')
 
+        self.norm_layer = LayerNormalization()
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
         
     @tf.function
@@ -191,8 +192,9 @@ class LSTMClassifier(tf.keras.Model):
         masks = tf.cast(masks, tf.bool)
 
         output_0 = self.lstm_0(inputs, mask=masks, training=training,initial_state=state_0)
+        output_0 = self.norm_layer(output_0)
         output_1 = self.lstm_1(output_0, mask=masks, training=training,initial_state=state_1)
-
+        output_1 = self.norm_layer(output_1)
         out = self.fc(output_1)
 
         # end_time = time.time()
@@ -262,14 +264,14 @@ class LSTMClassifier(tf.keras.Model):
         test_losses = []
         predictions = []
         true_labels = []
+
         for test_batch in test_batches:
-            y_pred = self(test_batch[0], test_batch[0][...,0])
+            y_pred = self(test_batch[0], test_batch[2])
             loss_value = self.get_loss(test_batch[1], y_pred, test_batch[2])
             test_losses.append(loss_value)
-            predictions.append(mask_pred(y_pred, test_batch[2]))
+            predictions.append(y_pred)
             true_labels.append(test_batch[1])
         avg_epoch_loss_val = tf.reduce_mean(test_losses).numpy()
-
 
         t1 = time.time()
         print('runtime {:.2f}'.format((t1-t0)))
