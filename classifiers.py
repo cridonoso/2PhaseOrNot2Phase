@@ -1,7 +1,7 @@
 import tensorflow as tf
 from phased import PhasedLSTM
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.layers import LSTM, RNN, LayerNormalization
+from tensorflow.keras.layers import LayerNormalization, LSTMCell
 import numpy as np
 import time
 
@@ -205,38 +205,48 @@ class LSTMClassifier(tf.keras.Model):
         self._units = units
         self._name  = name
         
-        self.lstm_0 = LSTM(self._units, dropout=dropout, return_sequences=True, name='rnn_0')
-        self.lstm_1 = LSTM(self._units, dropout=dropout, return_sequences=True, name='rnn_1')
+        self.lstm_0 = LSTMCell(self._units, name='rnn_0')
+        self.lstm_1 = LSTMCell(self._units, name='rnn_1')
         
         self.fc = tf.keras.layers.Dense(n_classes,
                                         activation='softmax',
                                         dtype='float32')
 
+        self.dropout = tf.keras.layers.Dropout(dropout)
         self.norm_layer = LayerNormalization()
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
         
     @tf.function
-    def call(self, inputs, masks, training=False):
-        state_0 = (tf.zeros([inputs.shape[0], self._units]),
-                   tf.zeros([inputs.shape[0], self._units]))
+    def call(self, inputs, times, training=False):
+        states_0 = [tf.zeros([inputs.shape[0], self._units]),
+                    tf.zeros([inputs.shape[0], self._units])]
 
-        state_1 = (tf.zeros([inputs.shape[0], self._units]),
-                   tf.zeros([inputs.shape[0], self._units]))
+        states_1 = [tf.zeros([inputs.shape[0], self._units]),
+                    tf.zeros([inputs.shape[0], self._units])]
 
-        # start_time = time.time()
+        initial_state = (states_0, states_1)
 
-        masks = tf.cast(masks, tf.bool)
 
-        output_0 = self.lstm_0(inputs, mask=masks, training=training,initial_state=state_0)
-        output_0 = self.norm_layer(output_0)
-        output_1 = self.lstm_1(output_0, mask=masks, training=training,initial_state=state_1)
-        output_1 = self.norm_layer(output_1)
-        out = self.fc(output_1)
+        x_t = tf.transpose(inputs, [1, 0, 2])
+        
+        time_steps = tf.shape(x_t)[0]
 
-        # end_time = time.time()
-        # tf.print('takes: {} sec'.format(end_time-start_time))
+        def compute(i, cur_state, out):
+            output_0, cur_state0 = self.lstm_0(x_t[i], cur_state[0])
+            print(len(cur_state0))
+            output_0 = self.norm_layer(output_0)
+            output_1, cur_state1 = self.lstm_1(output_0, cur_state[1])
+            output_2 = self.dropout(output_1)
+            return tf.add(i, 1), (cur_state0, cur_state1), out.write(i, self.fc(output_2))
 
-        return out
+        _, cur_state, out = tf.while_loop(
+            lambda a, b, c: a < time_steps,
+            compute,
+            (tf.constant(0), initial_state, tf.TensorArray(tf.float32, time_steps))
+        )
+
+        return tf.transpose(out.stack(), [1,0,2])
+
 
     @tf.function
     def get_loss(self, y_true, y_pred, masks):
@@ -333,7 +343,7 @@ class LSTMClassifier(tf.keras.Model):
             y_pred = self(test_batch[0], test_batch[2])
             loss_value = self.get_loss(test_batch[1], y_pred, test_batch[2])
             test_losses.append(loss_value)
-            predictions.append(y_pred)
+            predictions.append(mask_pred(y_pred, test_batch[2]))
             true_labels.append(test_batch[1])
         avg_epoch_loss_val = tf.reduce_mean(test_losses).numpy()
 
