@@ -291,7 +291,7 @@ class LSTMClassifier(tf.keras.Model):
                 grads = tape.gradient(loss_value, self.trainable_weights)
                 self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
                 iter_count+=1 
-                
+
             val_losses = []
             val_accura = []
             for val_batch in val:
