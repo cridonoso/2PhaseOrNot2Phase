@@ -1,7 +1,7 @@
 import tensorflow as tf
-from phased import PhasedLSTM
+from phased2 import PhasedLSTM
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.layers import LayerNormalization, LSTMCell
+from tensorflow.keras.layers import LayerNormalization, LSTMCell, RNN
 import numpy as np
 import time
 
@@ -38,7 +38,7 @@ class PhasedClassifier(tf.keras.Model):
                                         activation='softmax',
                                         dtype='float32')
         self.dropout = tf.keras.layers.Dropout(dropout)
-
+        self.norm_layer = LayerNormalization()
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
         
     @tf.function
@@ -58,8 +58,9 @@ class PhasedClassifier(tf.keras.Model):
         time_steps = tf.shape(x_t)[0]
 
         def compute(i, cur_state, out):
-            output_0, cur_state0 = self.plstm_0(x_t[i], t_t[i], cur_state[0])
-            output_1, cur_state1 = self.plstm_1(output_0, t_t[i], cur_state[1])
+            output_0, cur_state0 = self.plstm_0((x_t[i], t_t[i]), states=cur_state[0])
+            output_0 = self.norm_layer(output_0)
+            output_1, cur_state1 = self.plstm_1((output_0, t_t[i]), states=cur_state[1])
             output_2 = self.dropout(output_1)
             return tf.add(i, 1), (cur_state0, cur_state1), out.write(i, self.fc(output_2))
 

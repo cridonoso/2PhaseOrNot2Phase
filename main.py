@@ -27,8 +27,8 @@ if rnn_unit == 'lstm':
 	model = LSTMClassifier(units=units, n_classes=n_classes, name='{}/fold_{}/{}_{}'.format(dataset, fold_n, rnn_unit, units))
 
 
-model.fit(train_batches, 
-		  val_batches, 
+model.fit(train_batches.take(2), 
+		  val_batches.take(2), 
 		  epochs, 
 		  patience=10, 
 		  save_path='./experiments/')
