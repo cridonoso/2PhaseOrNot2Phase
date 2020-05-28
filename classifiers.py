@@ -1,5 +1,6 @@
 import tensorflow as tf
-from phased2 import PhasedLSTM
+from phased2 import PhasedLSTM 
+from phased import PhasedLSTM as OLDPhasedLSTM
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.layers import LayerNormalization, LSTMCell, RNN
 import numpy as np
@@ -7,8 +8,14 @@ import time
 
 
 def mask_pred(y_pred, mask):
+    valid_mask = tf.cast(tf.reduce_sum(mask, 1), dtype=tf.bool)
+    
+    mask = tf.boolean_mask(mask, valid_mask)
+    y_pred = tf.boolean_mask(y_pred, valid_mask)
+
     last = tf.cast(tf.reduce_sum(mask, 1), tf.int32)-1
     last = tf.stack([tf.range(last.shape[0]), last], 1)
+
     last_probas  = tf.gather_nd(y_pred, last)
     last_probas  = tf.expand_dims(last_probas, 2)
     tensor_last  = tf.tile(last_probas, [1,1,y_pred.shape[1]])
@@ -26,14 +33,19 @@ def add_scalar_log(value, writer, step, name):
 # =====================================================
 class PhasedClassifier(tf.keras.Model):
 
-    def __init__(self, units, n_classes, dropout=0.5, name='phased'):
+    def __init__(self, units, n_classes, dropout=0.5, name='phased', use_old=False):
         super(PhasedClassifier, self).__init__()
         self._cells = []
         self._units = units
         self._name  = name
 
-        self.plstm_0 = PhasedLSTM(self._units, name='rnn_0')
-        self.plstm_1 = PhasedLSTM(self._units, name='rnn_1')
+        if use_old:
+            self.plstm_0 = OLDPhasedLSTM(self._units, name='rnn_0')
+            self.plstm_1 = OLDPhasedLSTM(self._units, name='rnn_1')
+        else:    
+            self.plstm_0 = PhasedLSTM(self._units, name='rnn_0')
+            self.plstm_1 = PhasedLSTM(self._units, name='rnn_1')
+
         self.fc = tf.keras.layers.Dense(n_classes,
                                         activation='softmax',
                                         dtype='float32')
@@ -173,6 +185,7 @@ class PhasedClassifier(tf.keras.Model):
             test_losses.append(loss_value)
             predictions.append(mask_pred(y_pred, test_batch[2]))
             true_labels.append(test_batch[1])
+
         avg_epoch_loss_val = tf.reduce_mean(test_losses).numpy()
 
 
@@ -234,7 +247,6 @@ class LSTMClassifier(tf.keras.Model):
 
         def compute(i, cur_state, out):
             output_0, cur_state0 = self.lstm_0(x_t[i], cur_state[0])
-            print(len(cur_state0))
             output_0 = self.norm_layer(output_0)
             output_1, cur_state1 = self.lstm_1(output_0, cur_state[1])
             output_2 = self.dropout(output_1)
