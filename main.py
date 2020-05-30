@@ -22,7 +22,7 @@ val_batches   = data.load_record(path='{}/val.tfrecords'.format(fold_path),
 n_classes = [len(b[1][0]) for b in train_batches.take(1)][0]
 
 if rnn_unit == 'phased':
-	model = PhasedClassifier(units=units, n_classes=n_classes, name='{}/fold_{}/{}_{}'.format(dataset, fold_n, rnn_unit, units), normalize=True)
+	model = PhasedClassifier(units=units, n_classes=n_classes, name='{}/fold_{}/{}_{}'.format(dataset, fold_n, rnn_unit, units))
 if rnn_unit == 'lstm':
 	model = LSTMClassifier(units=units, n_classes=n_classes, name='{}/fold_{}/{}_{}'.format(dataset, fold_n, rnn_unit, units))
 

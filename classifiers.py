@@ -38,12 +38,11 @@ def add_scalar_log(value, writer, step, name):
 # =====================================================
 class PhasedClassifier(tf.keras.Model):
 
-    def __init__(self, units, n_classes, dropout=0.5, name='phased', use_old=False, normalize=False):
+    def __init__(self, units, n_classes, dropout=0.5, name='phased', use_old=False):
         super(PhasedClassifier, self).__init__()
         self._cells = []
         self._units = units
         self._name  = name
-        self.normalize = normalize
 
         if use_old:
             self.plstm_0 = OLDPhasedLSTM(self._units, name='rnn_0')
@@ -68,11 +67,6 @@ class PhasedClassifier(tf.keras.Model):
                     tf.zeros([inputs.shape[0], self._units]))
 
         initial_state = (states_0, states_1)
-
-        if self.normalize :
-            min_values = tf.expand_dims(tf.reduce_min(inputs, axis=1), 1)
-            max_values = tf.expand_dims(tf.reduce_max(inputs, axis=1), 1)
-            inputs = (inputs - min_values) / (max_values - min_values)
 
         x_t = tf.transpose(inputs, [1, 0, 2])
         t_t = tf.transpose(times, [1, 0])
