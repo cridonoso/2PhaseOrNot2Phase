@@ -7,6 +7,11 @@ import numpy as np
 import time
 
 
+def fix_tensor(x, mask):
+    valid_mask = tf.cast(tf.reduce_sum(mask, 1), dtype=tf.bool)
+    x = tf.boolean_mask(x, valid_mask)
+    return x
+
 def mask_pred(y_pred, mask):
     valid_mask = tf.cast(tf.reduce_sum(mask, 1), dtype=tf.bool)
     
@@ -54,7 +59,7 @@ class PhasedClassifier(tf.keras.Model):
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
         
     @tf.function
-    def call(self, inputs, times, training=False):
+    def call(self, inputs, times, training=False, normalize=False):
         states_0 = (tf.zeros([inputs.shape[0], self._units]),
                     tf.zeros([inputs.shape[0], self._units]))
 
@@ -63,7 +68,11 @@ class PhasedClassifier(tf.keras.Model):
 
         initial_state = (states_0, states_1)
 
-
+        if normalize:
+            min_values = tf.expand_dims(tf.reduce_min(inputs, axis=1), 1)
+            max_values = tf.expand_dims(tf.reduce_max(inputs, axis=1), 1)
+            inputs = (inputs - min_values) / (max_values - min_values)
+            
         x_t = tf.transpose(inputs, [1, 0, 2])
         t_t = tf.transpose(times, [1, 0])
         
@@ -131,7 +140,7 @@ class PhasedClassifier(tf.keras.Model):
             t0 = time.time()
             for train_batch in train:
                 with tf.GradientTape() as tape:
-                    y_pred = self(train_batch[0], train_batch[0][...,0], training=True)
+                    y_pred = self(train_batch[0], train_batch[0][...,0], training=True, normalize=True)
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
                     acc_value = self.get_acc(train_batch[1], y_pred, train_batch[2])
 
@@ -146,7 +155,7 @@ class PhasedClassifier(tf.keras.Model):
             val_losses = []
             val_accura = []
             for val_batch in val:
-                y_pred = self(val_batch[0], val_batch[0][...,0])
+                y_pred = self(val_batch[0], val_batch[0][...,0], normalize=True)
                 loss_value = self.get_loss(val_batch[1], y_pred, val_batch[2])
                 acc_value  = self.get_acc(val_batch[1], y_pred, val_batch[2])
 
@@ -180,11 +189,11 @@ class PhasedClassifier(tf.keras.Model):
         predictions = []
         true_labels = []
         for test_batch in test_batches:
-            y_pred = self(test_batch[0], test_batch[0][...,0])
+            y_pred = self(test_batch[0], test_batch[0][...,0], normalize=True)
             loss_value = self.get_loss(test_batch[1], y_pred, test_batch[2])
             test_losses.append(loss_value)
             predictions.append(mask_pred(y_pred, test_batch[2]))
-            true_labels.append(test_batch[1])
+            true_labels.append(fix_tensor(test_batch[1], test_batch[2]))
 
         avg_epoch_loss_val = tf.reduce_mean(test_losses).numpy()
 
@@ -357,7 +366,7 @@ class LSTMClassifier(tf.keras.Model):
             loss_value = self.get_loss(test_batch[1], y_pred, test_batch[2])
             test_losses.append(loss_value)
             predictions.append(mask_pred(y_pred, test_batch[2]))
-            true_labels.append(test_batch[1])
+            true_labels.append(fix_tensor(test_batch[1], test_batch[2]))
         avg_epoch_loss_val = tf.reduce_mean(test_losses).numpy()
 
         t1 = time.time()
