@@ -352,22 +352,19 @@ class LSTMClassifier(tf.keras.Model):
 
     def predict_proba(self, test_batches):
         t0 = time.time()
-        test_losses = []
         predictions = []
         true_labels = []
 
         for test_batch in test_batches:
             y_pred = self(test_batch[0], test_batch[2])
-            loss_value = self.get_loss(test_batch[1], y_pred, test_batch[2])
-            test_losses.append(loss_value)
             predictions.append(mask_pred(y_pred, test_batch[2]))
             true_labels.append(fix_tensor(test_batch[1], test_batch[2]))
         avg_epoch_loss_val = tf.reduce_mean(test_losses).numpy()
 
         t1 = time.time()
         print('runtime {:.2f}'.format((t1-t0)))
-        predictions = tf.concat(predictions, 0)
-        true_labels = tf.concat(true_labels, 0)
+        # predictions = tf.concat(predictions, 0)
+        # true_labels = tf.concat(true_labels, 0)
         return predictions, true_labels, avg_epoch_loss_val
 
 
