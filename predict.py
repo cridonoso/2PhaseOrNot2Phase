@@ -3,6 +3,7 @@ from classifiers import PhasedClassifier, LSTMClassifier
 import data
 import numpy as np
 import sys
+import pickle
 
 
 def get_one_pred(dataset, rnn_unit, fold_n):
@@ -36,4 +37,5 @@ fold_n = int(sys.argv[3])
 print('dataset: {} - units: {} - fold: {}'.format(dataset, rnn_type, fold_n))
 results = get_one_pred(dataset, 'lstm', fold_n)
 
-print(results)
+with open('./predictions/{}_{}_{}.pkl'.format(dataset, rnn_unit, fold_n), 'wb') as handle:
+	pickle.dump(results, handle)
