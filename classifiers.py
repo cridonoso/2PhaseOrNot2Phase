@@ -359,7 +359,6 @@ class LSTMClassifier(tf.keras.Model):
             y_pred = self(test_batch[0], test_batch[2])
             predictions.append(mask_pred(y_pred, test_batch[2]))
             true_labels.append(fix_tensor(test_batch[1], test_batch[2]))
-        avg_epoch_loss_val = tf.reduce_mean(test_losses).numpy()
 
         t1 = time.time()
         print('runtime {:.2f}'.format((t1-t0)))
