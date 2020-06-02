@@ -364,7 +364,7 @@ class LSTMClassifier(tf.keras.Model):
         print('runtime {:.2f}'.format((t1-t0)))
         # predictions = tf.concat(predictions, 0)
         # true_labels = tf.concat(true_labels, 0)
-        return predictions, true_labels, avg_epoch_loss_val
+        return predictions, true_labels
 
 
     def load_ckpt(self, ckpt_path):
