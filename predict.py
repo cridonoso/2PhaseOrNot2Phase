@@ -37,5 +37,5 @@ fold_n = int(sys.argv[3])
 print('dataset: {} - units: {} - fold: {}'.format(dataset, rnn_type, fold_n))
 results = get_one_pred(dataset, 'lstm', fold_n)
 
-with open('./predictions/{}_{}_{}.pkl'.format(dataset, rnn_unit, fold_n), 'wb') as handle:
+with open('./predictions/{}_{}_{}.pkl'.format(dataset, rnn_type, fold_n), 'wb') as handle:
 	pickle.dump(results, handle)
