@@ -4,30 +4,26 @@ import tensorflow as tf
 import sys
 
 batch_size = 400
-epochs     = 1000 
+epochs     = 2000 
 units      = 256
 
 dataset   = sys.argv[1]
 fold_n    = sys.argv[2]
 rnn_unit = sys.argv[3]
-standardize = True
+normalization = sys.argv[4]
 
-fold_path  =  '../datasets/records/{}/fold_{}/'.format(dataset, fold_n)
+fold_path  =  '../datasets/records/{}/fold_{}/{}/'.format(dataset, fold_n, normalization)
 
 
 train_batches = data.load_record(path='{}/train.tfrecords'.format(fold_path), 
-								batch_size=batch_size,
-								standardize=standardize)
+								batch_size=batch_size)
 val_batches   = data.load_record(path='{}/val.tfrecords'.format(fold_path), 
-                                 batch_size=batch_size,
-                                 standardize=standardize)
+                                 batch_size=batch_size)
 
 n_classes = [len(b[1][0]) for b in train_batches.take(1)][0]
 
-if standardize:
-	name = '{}_n2/fold_{}/{}_{}'.format(dataset, fold_n, rnn_unit, units)
-else:
-	name = '{}_n1/fold_{}/{}_{}'.format(dataset, fold_n, rnn_unit, units)
+
+name = '{}_{}/fold_{}/{}_{}'.format(dataset, normalization, fold_n, rnn_unit, units)
 
 if rnn_unit == 'phased':
 	model = PhasedClassifier(units=units, n_classes=n_classes, name=name)
@@ -38,5 +34,5 @@ if rnn_unit == 'lstm':
 model.fit(train_batches, 
 		  val_batches, 
 		  epochs, 
-		  patience=15, 
+		  patience=25, 
 		  save_path='./experiments/')

@@ -32,14 +32,6 @@ def read_tfrecord(serialized_example):
     
     return x, y_one_hot, m
 
-def normalize(x, y, m):
-    std_ = tf.expand_dims(tf.math.reduce_std(x, 1), 1)
-    mean_ = tf.expand_dims(tf.math.reduce_mean(x, 1), 1)
-    mean_ = mean_ * [0., 1., 1.]
-    x = tf.where(mean_  == 0., x, (x - mean_)/std_)
-    x = tf.where(tf.math.is_nan(x), 0., x)
-    
-    return x, y, m
 
 def load_record(path, batch_size, standardize=False):
     """ Data loader for irregular time series with masking"
@@ -55,9 +47,6 @@ def load_record(path, batch_size, standardize=False):
     dataset = tf.data.TFRecordDataset(path)
     dataset = dataset.map(lambda x: read_tfrecord(x), 
                           num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    if standardize:
-        dataset = dataset.map(lambda x, y, m: normalize(x, y, m), 
-                          num_parallel_calls=tf.data.experimental.AUTOTUNE)    
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache
     dataset = dataset.cache() 
     batches = dataset.batch(batch_size)
