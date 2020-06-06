@@ -36,6 +36,7 @@ def normalize(x, y, m):
     std_ = tf.expand_dims(tf.math.reduce_std(x, 1), 1)
     mean_ = tf.expand_dims(tf.math.reduce_mean(x, 1), 1)
     x = (x - mean_)/std_
+    x = tf.where(tf.math.is_nan(x), 0., x)
     return x, y, m
 
 def load_record(path, batch_size, standardize=False):
