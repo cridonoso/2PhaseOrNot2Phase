@@ -5,6 +5,7 @@ from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.layers import LayerNormalization, LSTMCell, RNN
 import numpy as np
 import time
+from os import path
 
 
 def fix_tensor(x, mask):
@@ -117,6 +118,8 @@ class PhasedClassifier(tf.keras.Model):
         test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
 
+        ckpts_path = save_path+'/{}'.format(self._name)+'/ckpts'
+
         # Define checkpoints
         ckpt = tf.train.Checkpoint(step=tf.Variable(1),
                                    model=self,
@@ -125,6 +128,12 @@ class PhasedClassifier(tf.keras.Model):
         manager = tf.train.CheckpointManager(ckpt,
                                              save_path+'/{}'.format(self._name)+'/ckpts',
                                              max_to_keep=1)
+
+
+        if path.isdir(ckpts_path):
+            self.load_ckpt(ckpts_path)
+            print('[INFO] WEIGHTS SUCCEFULLY LOADED')
+
         # Training variables
         best_loss = 9999999
         early_stop_count = 0
