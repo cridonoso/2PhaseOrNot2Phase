@@ -1,11 +1,11 @@
 import tensorflow as tf
 import time
 
-from layers.phased import PhasedLSTM 
+from .layers.phased import PhasedLSTM 
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.layers import LayerNormalization
 from os import path
-from tools import mask_pred, add_scalar_log
+from .tools import mask_pred, add_scalar_log
 
 
 

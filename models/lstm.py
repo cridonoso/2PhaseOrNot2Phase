@@ -4,6 +4,7 @@ from tensorflow.keras.layers import LayerNormalization, LSTMCell, RNN
 import time
 
 from os import path
+from .tools import mask_pred, add_scalar_log
 
 class LSTMClassifier(tf.keras.Model):
 
@@ -126,7 +127,7 @@ class LSTMClassifier(tf.keras.Model):
             val_losses = []
             val_accura = []
             for val_batch in val:
-                y_pred = self(val_batch[0], val_batch[2])
+                y_pred = self(val_batch[0], training=False)
                 loss_value = self.get_loss(val_batch[1], y_pred, val_batch[2])
                 acc_value  = self.get_acc(val_batch[1], y_pred, val_batch[2])
                 val_accura.append(acc_value)
