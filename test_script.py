@@ -6,7 +6,7 @@ import time
 dataset  = sys.argv[1]
 
 for unit_type in ['lstm', 'phased']:
-	for fold_n in [1,2]:
+	for fold_n in range(3):
 	    start = time. time()
 	    command1 = 'python predict.py {} {} {}'.format(dataset, unit_type, fold_n)
 	    print('executing: ',command1)
