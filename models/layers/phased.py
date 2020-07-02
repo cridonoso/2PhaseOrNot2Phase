@@ -53,7 +53,6 @@ class PhasedLSTM(Layer):
         self.period = self.add_weight(
                         name="period",
                         shape=[self.units],
-                        #dtype=tf.float32,
                         initializer=_exponential_initializer(
                                             self.period_init_min,
                                             self.period_init_max),
