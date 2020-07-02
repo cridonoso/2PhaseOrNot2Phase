@@ -18,7 +18,7 @@ flags.DEFINE_integer("patience", 25, "Number of epochs to activate early stop")
 
 
 def main(argv):
-	fold_path  =  '../datasets/records/{}/fold_{}/{}/'.format(FLAGS.dataset, 
+	fold_path  =  './datasets/records/{}/fold_{}/{}/'.format(FLAGS.dataset, 
 															  FLAGS.fold_n, 
 															  FLAGS.normalization)
 
