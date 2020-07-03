@@ -123,8 +123,66 @@ def pad_lightcurves(lightcurves, labels, maxobs=200):
 			new_lightcurves.append(splits_lc[s])
 			new_labels.append(labels[k])
 			masks.append(splits_mask[s])
-	        
+
 	return np.array(new_lightcurves), np.array(new_labels), np.array(masks)
+
+def train_val_test_split(lightcurves, labels, train_frac=0.5, val_frac=0.25):
+	''' Divide dataset in training, validation and testing set.
+
+
+	Arguments:
+		lightcurves {[list]} -- [list of light curves]
+		labels {[list]} -- [list of labels]
+
+	Keyword Arguments:
+		train_frac {float} -- [sample fraction for training] (default: {0.5})
+		val_frac {float} -- [sample fraction for validation] (default: {0.25})
+	
+	Returns:
+		[dictonary] -- [dict with 'train' - 'validation' - 'test' subsets]
+	'''
+
+	X_train = []
+	X_valid = []
+	X_test  = []
+
+	y_train = []
+	y_valid = []
+	y_test  = []
+
+
+	uniques, counts = np.unique(labels, return_counts=True)
+	for u, c in zip(uniques, counts):
+		particular_class = np.array(lightcurves)[labels == u]
+		n = particular_class.shape[0]
+
+		indices = np.arange(0, n)
+		np.random.shuffle(indices)
+		particular_class = particular_class[indices]
+
+		ntrain = int(np.floor(n*train_frac))
+		nval   = int(np.floor(n*val_frac))
+
+		X_train.append(particular_class[:ntrain])
+		y_train.append(np.tile(u, ntrain))
+
+		X_valid.append(particular_class[ntrain: ntrain+nval])
+		y_valid.append(np.tile(u, nval))
+
+		X_test.append(particular_class[(ntrain+nval):])
+		y_test.append(np.tile(u, n-(ntrain+nval)))
+
+	X_train = np.concatenate(X_train)
+	X_valid = np.concatenate(X_valid)
+	X_test = np.concatenate(X_test)
+
+	y_train = np.concatenate(y_train)
+	y_valid = np.concatenate(y_valid)
+	y_test = np.concatenate(y_test)
+
+	return {'train': {'x': X_train, 'y': y_train},
+			'validation': {'x': X_valid, 'y': y_valid},
+			'test': {'x': X_test, 'y': y_test}}
 
 def sanity_check(lightcurves):
 	'''Operation for cleaning lightcurves
