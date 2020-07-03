@@ -73,12 +73,42 @@ def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=
 		for object_id, serie in objects:
 			lc = serie.iloc[:, 1:-1]
 			label = serie.iloc[0, -1]
-			light_curves.append(lc)
+			light_curves.append(lc.values)
 			labels.append(class_code[label])
 			oids.append(object_id)
 
 	return light_curves, labels, oids
 
+
+def pad_lightcurves(lightcurves, labels, maxobs=200):
+    n_samples = len(lightcurves)
+    
+    new_lightcurves = []
+    new_labels = []
+    masks = []
+    for k in range(n_samples):
+        # === Check if times are sorted ====
+        lc = lightcurves[k].values
+        indices = np.argsort(lc[...,0])
+        lc = lc[indices]
+        
+        # === Split Light Curve ============
+        n_div = lc.shape[0]%maxobs
+        base_lc = np.zeros(shape=[lc.shape[0]+(maxobs-n_div), lc.shape[-1]])
+        base_lc[:lc.shape[0], :] = lc
+        # === Get mask =====================
+        base_mask = np.zeros(shape=[lc.shape[0]+(maxobs-n_div)])
+        base_mask[:lc.shape[0]] = np.ones(lc.shape[0])
+        # Split matrix and write record
+        splits_lc = np.split(base_lc, int(base_lc.shape[0]/maxobs))
+        splits_mask = np.split(base_mask, int(base_mask.shape[0]/maxobs))
+        
+        for s in range(len(splits_lc)):
+            new_lightcurves.append(splits_lc[s])
+            new_labels.append(labels[k])
+            masks.append(splits_mask[s])
+            
+    return new_lightcurves, new_labels, masks
 
 def sanity_check(lightcurves):
 	'''Operation for cleaning lightcurves
