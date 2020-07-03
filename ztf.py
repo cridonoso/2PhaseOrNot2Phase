@@ -27,7 +27,7 @@ class_code = {
 			'ZZ'	 :16
 			}
 
-def get_light_curves(metapath, det_path, nondet_path=''):
+def get_light_curves(metapath, det_path, nondet_path='', chunks=True):
 	"""Open a csv of ZTF detection and convert observation 
 	to a list of lightcurves
 	
@@ -48,13 +48,28 @@ def get_light_curves(metapath, det_path, nondet_path=''):
 	oids 		 = []
 	metadata_df  = pd.read_csv(metapath)
 
-	for chunk in pd.read_csv(det_path, chunksize=1e6, low_memory=False):
-		result = pd.merge(chunk[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid']], 
-						  metadata_df[['oid', 'classALeRCE']], 
-						  on='oid')
+	if chunks:
+		for chunk in pd.read_csv(det_path, chunksize=1e6, low_memory=False):
+			result = pd.merge(chunk[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid']], 
+							  metadata_df[['oid', 'classALeRCE']], 
+							  on='oid')
+
+			objects = result.groupby('oid')
+			
+			for object_id, serie in objects:
+				lc = serie.iloc[:, 1:-1]
+				label = serie.iloc[0, -1]
+				light_curves.append(lc)
+				labels.append(class_code[label])
+				oids.append(object_id)
+	else:
+		# ======== RAM expensive ==========
+		detections = pd.read_csv(det_path)
+		result = pd.merge(detections[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid']], 
+				  		  metadata_df[['oid', 'classALeRCE']], 
+				  		  on='oid')
 
 		objects = result.groupby('oid')
-		
 		for object_id, serie in objects:
 			lc = serie.iloc[:, 1:-1]
 			label = serie.iloc[0, -1]
