@@ -81,6 +81,23 @@ def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=
 
 
 def pad_lightcurves(lightcurves, labels, maxobs=200):
+	''' Take a list of lightcurves and pad them. 
+	
+	It also takes subsamples of observations based on 
+	maxobs. In other words, we cut the light curve
+	in batches of <maxobs> observations
+	
+	Arguments:
+		lightcurves {[list]} -- [list of light curves]
+		labels {[labels]} -- [list of label codes]
+	
+	Keyword Arguments:
+		maxobs {number} -- [max number of observations whitin 
+							the light curve] (default: {200})
+	
+	Returns:
+		[numpy array] -- [padded dataset with their corresponding masks]
+	'''
     n_samples = len(lightcurves)
     
     new_lightcurves = []
@@ -88,9 +105,8 @@ def pad_lightcurves(lightcurves, labels, maxobs=200):
     masks = []
     for k in range(n_samples):
         # === Check if times are sorted ====
-        lc = lightcurves[k].values
-        indices = np.argsort(lc[...,0])
-        lc = lc[indices]
+        indices = np.argsort(lightcurves[k][...,0])
+        lc = lightcurves[k][indices]
         
         # === Split Light Curve ============
         n_div = lc.shape[0]%maxobs
@@ -108,7 +124,7 @@ def pad_lightcurves(lightcurves, labels, maxobs=200):
             new_labels.append(labels[k])
             masks.append(splits_mask[s])
             
-    return new_lightcurves, new_labels, masks
+    return np.array(new_lightcurves), np.array(new_labels), np.array(masks)
 
 def sanity_check(lightcurves):
 	'''Operation for cleaning lightcurves
