@@ -27,7 +27,7 @@ class_code = {
 			'ZZ'	 :16
 			}
 
-def get_light_curves(metapath, det_path, nondet_path='', chunks=True):
+def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=1e6):
 	"""Open a csv of ZTF detection and convert observation 
 	to a list of lightcurves
 	
@@ -49,7 +49,7 @@ def get_light_curves(metapath, det_path, nondet_path='', chunks=True):
 	metadata_df  = pd.read_csv(metapath)
 
 	if chunks:
-		for chunk in pd.read_csv(det_path, chunksize=1e6, low_memory=False):
+		for chunk in pd.read_csv(det_path, chunksize=chunksize, low_memory=False):
 			result = pd.merge(chunk[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid']], 
 							  metadata_df[['oid', 'classALeRCE']], 
 							  on='oid')
