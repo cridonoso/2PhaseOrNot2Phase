@@ -64,7 +64,7 @@ def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=
 				oids.append(object_id)
 	else:
 		# ======== RAM expensive ==========
-		detections = pd.read_csv(det_path)
+		detections = pd.read_csv(det_path, low_memory=False)
 		result = pd.merge(detections[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid']], 
 				  		  metadata_df[['oid', 'classALeRCE']], 
 				  		  on='oid')
