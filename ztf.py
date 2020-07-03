@@ -82,49 +82,49 @@ def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=
 
 def pad_lightcurves(lightcurves, labels, maxobs=200):
 	''' Take a list of lightcurves and pad them. 
-	
+
 	It also takes subsamples of observations based on 
 	maxobs. In other words, we cut the light curve
 	in batches of <maxobs> observations
-	
+
 	Arguments:
 		lightcurves {[list]} -- [list of light curves]
 		labels {[labels]} -- [list of label codes]
-	
+
 	Keyword Arguments:
 		maxobs {number} -- [max number of observations whitin 
 							the light curve] (default: {200})
-	
+
 	Returns:
 		[numpy array] -- [padded dataset with their corresponding masks]
 	'''
-    n_samples = len(lightcurves)
-    
-    new_lightcurves = []
-    new_labels = []
-    masks = []
-    for k in range(n_samples):
-        # === Check if times are sorted ====
-        indices = np.argsort(lightcurves[k][...,0])
-        lc = lightcurves[k][indices]
-        
-        # === Split Light Curve ============
-        n_div = lc.shape[0]%maxobs
-        base_lc = np.zeros(shape=[lc.shape[0]+(maxobs-n_div), lc.shape[-1]])
-        base_lc[:lc.shape[0], :] = lc
-        # === Get mask =====================
-        base_mask = np.zeros(shape=[lc.shape[0]+(maxobs-n_div)])
-        base_mask[:lc.shape[0]] = np.ones(lc.shape[0])
-        # Split matrix and write record
-        splits_lc = np.split(base_lc, int(base_lc.shape[0]/maxobs))
-        splits_mask = np.split(base_mask, int(base_mask.shape[0]/maxobs))
-        
-        for s in range(len(splits_lc)):
-            new_lightcurves.append(splits_lc[s])
-            new_labels.append(labels[k])
-            masks.append(splits_mask[s])
-            
-    return np.array(new_lightcurves), np.array(new_labels), np.array(masks)
+	n_samples = len(lightcurves)
+
+	new_lightcurves = []
+	new_labels = []
+	masks = []
+	for k in range(n_samples):
+		# === Check if times are sorted ====
+		indices = np.argsort(lightcurves[k][...,0])
+		lc = lightcurves[k][indices]
+
+		# === Split Light Curve ============
+		n_div = lc.shape[0]%maxobs
+		base_lc = np.zeros(shape=[lc.shape[0]+(maxobs-n_div), lc.shape[-1]])
+		base_lc[:lc.shape[0], :] = lc
+		# === Get mask =====================
+		base_mask = np.zeros(shape=[lc.shape[0]+(maxobs-n_div)])
+		base_mask[:lc.shape[0]] = np.ones(lc.shape[0])
+		# Split matrix and write record
+		splits_lc = np.split(base_lc, int(base_lc.shape[0]/maxobs))
+		splits_mask = np.split(base_mask, int(base_mask.shape[0]/maxobs))
+
+		for s in range(len(splits_lc)):
+			new_lightcurves.append(splits_lc[s])
+			new_labels.append(labels[k])
+			masks.append(splits_mask[s])
+	        
+	return np.array(new_lightcurves), np.array(new_labels), np.array(masks)
 
 def sanity_check(lightcurves):
 	'''Operation for cleaning lightcurves
