@@ -1,5 +1,31 @@
 import numpy as np
+import pandas as pd
 
+class_code = {
+			'AGN'	 :0,
+			'Blazar' :1, 
+			'CV/Nova':2,
+			'Ceph'	 :3,
+			'DSCT'	 :4,
+			'EA'	 :5,
+			'EB/EW'	 :6,
+			'LPV'	 :7,
+			'NLAGN'	 :8,
+			'NLQSO'	 :9,
+			'Periodic-Other':10,
+			'QSO'	 :11,
+			'RRL'	 :12,
+			'RSCVn'	 :13,
+			'SLSN'	 :14,
+			'SNII'	 :14,
+			'SNIIb'	 :14,
+			'SNIIn'	 :14,
+			'SNIa'	 :14,
+			'SNIbc'	 :14,
+			'TDE'	 :14,
+			'YSO'	 :15,
+			'ZZ'	 :16
+			}
 
 def get_light_curves(metapath, det_path, nondet_path=''):
 	"""Open a csv of ZTF detection and convert observation 
@@ -18,8 +44,25 @@ def get_light_curves(metapath, det_path, nondet_path=''):
 	"""
 
 	light_curves = []
+	labels 		 = []
+	oids 		 = []
+	metadata_df  = pd.read_csv(metapath)
 
-	return light_curves
+	for chunk in pd.read_csv(det_path, chunksize=1e6, low_memory=False):
+		result = pd.merge(chunk[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid']], 
+						  metadata_df[['oid', 'classALeRCE']], 
+						  on='oid')
+
+		objects = result.groupby('oid')
+		
+		for object_id, serie in objects:
+			lc = serie.iloc[:, 1:-1]
+			label = serie.iloc[0, -1]
+			light_curves.append(lc)
+			labels.append(class_code[label])
+			oids.append(object_id)
+
+	return light_curves, labels, oids
 
 
 def sanity_check(lightcurves):
@@ -102,5 +145,6 @@ def sample_lightcurves(models, n_samples, obs=200):
 	Keyword Arguments:
 		obs {number} -- [description] (default: {200})
 	'''
-	
+
 	return samples 
+
