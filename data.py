@@ -128,7 +128,9 @@ def load_record(path, batch_size, standardize=False):
                           num_parallel_calls=tf.data.experimental.AUTOTUNE)
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache
     dataset = dataset.cache() 
+    dataset = dataset.shuffle(100000, reshuffle_each_iteration=True)
     batches = dataset.batch(batch_size)
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#prefetch
-    dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    batches = batches.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+
     return batches
