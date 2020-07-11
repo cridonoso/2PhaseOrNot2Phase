@@ -13,7 +13,7 @@ flags.DEFINE_string("rnn_unit", "plstm", "Recurrent unit (lstm or plstm)")
 flags.DEFINE_integer("fold_n", 0, "Fold number whitin xvalidation.")
 flags.DEFINE_integer("batch_size", 400, "number of samples involved in a single forward-backward")
 flags.DEFINE_integer("epochs", 2000, "Number of epochs")
-flags.DEFINE_integer("units", 256, "Number of neurons")
+flags.DEFINE_integer("units", 16, "Number of neurons")
 flags.DEFINE_integer("patience", 25, "Number of epochs to activate early stop")
 
 
