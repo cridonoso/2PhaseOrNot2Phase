@@ -38,7 +38,7 @@ flags.DEFINE_string("dataset", "macho", "Dataset to be downloaded (macho, linear
 def main(argv):
 	if FLAGS.record:
 		file_id = dataset_id['record'][FLAGS.dataset]
-		dest_path='{}/records/{}.zip'.format(FLAGS.destination, FLAGS.dataset, FLAGS.dataset)
+		dest_path='{}/records/{}/{}.zip'.format(FLAGS.destination, FLAGS.dataset, FLAGS.dataset)
 	else:
 		file_id = dataset_id['raw'][FLAGS.dataset]
 		dest_path='{}/raw_data/{}/{}.zip'.format(FLAGS.destination, FLAGS.dataset, FLAGS.dataset)
