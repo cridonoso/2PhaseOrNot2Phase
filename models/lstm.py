@@ -8,7 +8,7 @@ from .tools import mask_pred, add_scalar_log
 
 class LSTMClassifier(tf.keras.Model):
 
-    def __init__(self, units, n_classes, dropout=0.5, name='phased'):
+    def __init__(self, units, n_classes, dropout=0.5, name='phased', lr=1e-3):
         super(LSTMClassifier, self).__init__()
         self._units = units
         self._name  = name
@@ -22,7 +22,7 @@ class LSTMClassifier(tf.keras.Model):
 
         self.dropout = tf.keras.layers.Dropout(dropout)
         self.norm_layer = LayerNormalization()
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
         
     @tf.function
     def call(self, inputs, training=False):
