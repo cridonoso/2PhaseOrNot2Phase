@@ -12,6 +12,7 @@ flags.DEFINE_string("normalization", "n1", "Normalization approach according to 
 flags.DEFINE_string("rnn_unit", "plstm", "Recurrent unit (lstm or plstm)")
 flags.DEFINE_integer("fold_n", 0, "Fold number whitin xvalidation.")
 flags.DEFINE_integer("batch_size", 400, "number of samples involved in a single forward-backward")
+flags.DEFINE_float('lr', 1e-3, "Learning rate")
 flags.DEFINE_integer("epochs", 2000, "Number of epochs")
 flags.DEFINE_integer("units", 256, "Number of neurons")
 flags.DEFINE_integer("patience", 25, "Number of epochs to activate early stop")
@@ -37,9 +38,9 @@ def main(argv):
 										FLAGS.units)
 
 	if FLAGS.rnn_unit == 'plstm':
-		model = PhasedClassifier(units=FLAGS.units, n_classes=n_classes, name=name)
+		model = PhasedClassifier(units=FLAGS.units, n_classes=n_classes, name=name, lr=FLAGS.lr)
 	if FLAGS.rnn_unit == 'lstm':
-		model = LSTMClassifier(units=FLAGS.units, n_classes=n_classes, name=name)
+		model = LSTMClassifier(units=FLAGS.units, n_classes=n_classes, name=name, lr=FLAGS.lr)
 
 
 	model.fit(train_batches, 

@@ -6,7 +6,7 @@ import time
 
 dataset = sys.argv[1]
 
-for unit_type in ['phased', 'lstm']:
+for unit_type in ['plstm', 'lstm']:
 	for normalization in ['n1','n2']:
 		for fold_n in range(3):
 		    start = time. time()
