@@ -8,6 +8,7 @@ from os import path
 from .tools import mask_pred, add_scalar_log
 
 
+import numpy as np
 
 class PhasedClassifier(tf.keras.Model):
 
@@ -111,6 +112,7 @@ class PhasedClassifier(tf.keras.Model):
             # =================================
             for train_batch in train:
                 with tf.GradientTape() as tape:
+                    print(np.argmax(train_batch[1], 1))
                     y_pred = self(train_batch[0], train_batch[0][...,0], training=True)
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
                     acc_value = self.get_acc(train_batch[1], y_pred, train_batch[2])
@@ -155,7 +157,7 @@ class PhasedClassifier(tf.keras.Model):
                 print('EARLY STOPPING ACTIVATED')
                 break
 
-    def predict_proba(self, test_batches):
+    def predict_proba(self, test_batches, concat_batches=False):
         t0 = time.time()
         predictions = []
         true_labels = []
@@ -166,7 +168,10 @@ class PhasedClassifier(tf.keras.Model):
 
         t1 = time.time()
         print('runtime {:.2f}'.format((t1-t0)))
-        return predictions, true_labels
+        if concat_batches:
+            return tf.concat(predictions, 0), tf.concat(true_labels, 0)
+        else:
+            return predictions, true_labels
 
 
     def load_ckpt(self, ckpt_path):
