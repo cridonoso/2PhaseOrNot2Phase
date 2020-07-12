@@ -37,7 +37,7 @@ class PhasedLSTM(Layer):
 
     def _mod(self, x, y):
         """Modulo function that propagates x gradients."""
-        return tf.stop_gradient((x%y) - x) + x
+        return x%y#tf.stop_gradient((x%y) - x) + x
 
     def _get_cycle_ratio(self, time, phase, period):
         """Compute the cycle ratio in the dtype of the time."""
@@ -45,8 +45,7 @@ class PhasedLSTM(Layer):
         period_casted = tf.cast(period, dtype=time.dtype)
         time = tf.reshape(time, [time.shape[0],1])
         shifted_time = time - phase_casted
-        cycle_ratio = self._mod(shifted_time, period_casted)
-        cycle_ratio = self._mod(shifted_time, period_casted) / period_casted
+        cycle_ratio = (shifted_time%period_casted) / period_casted
         return cycle_ratio#tf.cast(cycle_ratio, dtype=tf.float32)
 
     def build(self, input_shape):
