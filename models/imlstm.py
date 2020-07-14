@@ -32,7 +32,7 @@ class ImbalancedLSTM(tf.keras.Model):
                                         dtype='float32')
         self.norm_layers = norm_layers
         self.dropout = tf.keras.layers.Dropout(dropout)
-        self.ldam_loss = LDAM(cls_num, max_m)
+        self.ldam_loss = categorical_crossentropy#LDAM(cls_num, max_m)
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
         
