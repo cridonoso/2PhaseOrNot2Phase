@@ -55,10 +55,8 @@ class ImbalancedLSTM(tf.keras.Model):
                 output = self.norm_layers[layer](output)
                 new_states.append(cur_state) # Save current layer state
 
-            # output = tf.math.l2_normalize(output)
             output = self.dropout(output)
             output = self.fc(output)
-            # output = tf.math.l2_normalize(output)
             return tf.add(i, 1), new_states, out.write(i, output)
 
         _, cur_state, out = tf.while_loop(
