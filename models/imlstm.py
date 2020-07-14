@@ -5,6 +5,7 @@ from tensorflow.keras.regularizers import l2
 from os import path
 from .tools import mask_pred, add_scalar_log
 from .custom_losses import LDAM
+from tensorflow.keras.losses import categorical_crossentropy
 
 
 class ImbalancedLSTM(tf.keras.Model):
