@@ -19,7 +19,6 @@ class LSTMClassifier(tf.keras.Model):
             cell = LSTMCell(self._units, 
                             name='layer_{}'.format(layer),
                             dropout=dropout,
-                            kernel_regularizer=LayerNormalization(),
                             recurrent_regularizer=LayerNormalization())
             cells.append(cell)
         

@@ -22,8 +22,7 @@ class PhasedClassifier(tf.keras.Model):
         for layer in range(self.num_layers):
             cell = PhasedLSTM(self._units, 
                               name='rnn_{}'.format(layer), 
-                              dropout=dropout, 
-                              kernel_regularizer=LayerNormalization(),
+                              dropout=dropout,
                               recurrent_regularizer=LayerNormalization())
             cells.append(cell)
 
