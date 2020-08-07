@@ -20,7 +20,7 @@ class LSTMClassifier(tf.keras.Model):
                             name='layer_{}'.format(layer),
                             dropout=dropout,
                             kernel_regularizer=LayerNormalization(),
-                            recurrent_initializer=LayerNormalization())
+                            recurrent_regularizer=LayerNormalization())
             cells.append(cell)
         
         self.cells = cells

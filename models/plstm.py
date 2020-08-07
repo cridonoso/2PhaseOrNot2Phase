@@ -24,7 +24,7 @@ class PhasedClassifier(tf.keras.Model):
                               name='rnn_{}'.format(layer), 
                               dropout=dropout, 
                               kernel_regularizer=LayerNormalization(),
-                              recurrent_initializer=LayerNormalization())
+                              recurrent_regularizer=LayerNormalization())
             cells.append(cell)
 
         self.cells = cells
