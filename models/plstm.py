@@ -12,31 +12,34 @@ import numpy as np
 
 class PhasedClassifier(tf.keras.Model):
 
-    def __init__(self, units, n_classes, dropout=0.5, name='phased', lr=1e-3):
+    def __init__(self, units, n_classes, layers=1, dropout=0.5, lr=1e-3, name='phased'):
         super(PhasedClassifier, self).__init__()
         self._units = units
         self._name  = name
+        self.num_layers = layers
 
-        self.plstm_0 = PhasedLSTM(self._units, name='rnn_0')
-        self.plstm_1 = PhasedLSTM(self._units, name='rnn_1')
+        cells = []
+        for layer in range(self.num_layers):
+            cell = PhasedLSTM(self._units, 
+                              name='rnn_{}'.format(layer), 
+                              dropout=dropout, 
+                              kernel_regularizer=LayerNormalization())
+            cells.append(cell)
 
+        self.cells = cells
         self.fc = tf.keras.layers.Dense(n_classes,
                                         activation='softmax',
                                         dtype='float32')
 
-        self.dropout = tf.keras.layers.Dropout(dropout)
-        self.norm_layer = LayerNormalization()
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
         
     @tf.function
     def call(self, inputs, times, training=False):
-        states_0 = (tf.zeros([inputs.shape[0], self._units]),
-                    tf.zeros([inputs.shape[0], self._units]))
 
-        states_1 = (tf.zeros([inputs.shape[0], self._units]),
-                    tf.zeros([inputs.shape[0], self._units]))
-
-        initial_state = (states_0, states_1)
+        initial_state = []
+        for k in range(self.num_layers):
+            initial_state.append((tf.zeros([inputs.shape[0], self._units]),
+                                  tf.zeros([inputs.shape[0], self._units])))
 
         x_t = tf.transpose(inputs, [1, 0, 2])
         t_t = tf.transpose(times, [1, 0])
@@ -44,11 +47,13 @@ class PhasedClassifier(tf.keras.Model):
         time_steps = tf.shape(x_t)[0]
 
         def compute(i, cur_state, out):
-            output_0, cur_state0 = self.plstm_0((x_t[i], t_t[i]), states=cur_state[0])
-            output_0 = self.norm_layer(output_0)
-            output_1, cur_state1 = self.plstm_1((output_0, t_t[i]), states=cur_state[1])
-            output_2 = self.dropout(output_1)
-            return tf.add(i, 1), (cur_state0, cur_state1), out.write(i, self.fc(output_2))
+            output = (x_t[i], t_t[i])
+            new_states = []
+            for layer in range(self.num_layers):
+                hidden_state, states = self.cells[layer](output, cur_state[layer])
+                output = (hidden_state, t_t[i])
+                new_states.append(states)
+            return tf.add(i, 1), new_states, out.write(i, self.fc(hidden_state))
 
         _, cur_state, out = tf.while_loop(
             lambda a, b, c: a < time_steps,

@@ -8,43 +8,44 @@ from .tools import mask_pred, add_scalar_log
 
 class LSTMClassifier(tf.keras.Model):
 
-    def __init__(self, units, n_classes, dropout=0.5, name='phased', lr=1e-3):
+    def __init__(self, units, n_classes, layers=1, dropout=0.5, lr=1e-3, name='phased'):
         super(LSTMClassifier, self).__init__()
         self._units = units
         self._name  = name
+        self.num_layers = layers
+
+        cells = []
+        for layer in range(self.num_layers):
+            cell = LSTMCell(self._units, 
+                            name='layer_{}'.format(layer),
+                            dropout=dropout,
+                            kernel_regularizer=LayerNormalization())
+            cells.append(cell)
         
-        self.lstm_0 = LSTMCell(self._units, name='rnn_0')
-        self.lstm_1 = LSTMCell(self._units, name='rnn_1')
-        
+        self.cells = cells
         self.fc = tf.keras.layers.Dense(n_classes,
                                         activation='softmax',
                                         dtype='float32')
 
-        self.dropout = tf.keras.layers.Dropout(dropout)
-        self.norm_layer = LayerNormalization()
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
         
     @tf.function
     def call(self, inputs, training=False):
-        states_0 = [tf.zeros([inputs.shape[0], self._units]),
-                    tf.zeros([inputs.shape[0], self._units])]
-
-        states_1 = [tf.zeros([inputs.shape[0], self._units]),
-                    tf.zeros([inputs.shape[0], self._units])]
-
-        initial_state = (states_0, states_1)
-
+        initial_state = []
+        for k in range(self.num_layers):
+            initial_state.append([tf.zeros([inputs.shape[0], self._units]),
+                                  tf.zeros([inputs.shape[0], self._units])])
 
         x_t = tf.transpose(inputs, [1, 0, 2])
-        
         time_steps = tf.shape(x_t)[0]
 
-        def compute(i, cur_state, out):
-            output_0, cur_state0 = self.lstm_0(x_t[i], cur_state[0])
-            output_0 = self.norm_layer(output_0)
-            output_1, cur_state1 = self.lstm_1(output_0, cur_state[1])
-            output_2 = self.dropout(output_1)
-            return tf.add(i, 1), (cur_state0, cur_state1), out.write(i, self.fc(output_2))
+        def compute(i, states, out):
+            output = x_t[i]
+            new_states = []
+            for layer in range(self.num_layers):
+                output, cur_state = self.cells[layer](output, states[layer])
+                new_states.append(cur_state) # Save current layer state
+            return tf.add(i, 1), new_states, out.write(i, self.fc(output))
 
         _, cur_state, out = tf.while_loop(
             lambda a, b, c: a < time_steps,
@@ -53,7 +54,6 @@ class LSTMClassifier(tf.keras.Model):
         )
 
         return tf.transpose(out.stack(), [1,0,2])
-
 
     @tf.function
     def get_loss(self, y_true, y_pred, masks):

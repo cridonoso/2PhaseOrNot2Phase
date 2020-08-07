@@ -15,14 +15,14 @@ def _exponential_initializer(min, max, dtype=None):
 class PhasedLSTM(Layer):
     def __init__(self,
                  units,
-                 dropout=0.5,
                  leak_rate=0.001,
                  ratio_on=0.1,
-                 period_init_min=1.0,
+                 period_init_min=0.0,
                  period_init_max=1000.0,
                  rec_activation = tf.math.sigmoid,
                  out_activation = tf.math.tanh,
-                 name='plstm'):
+                 name='plstm',
+                 **kwargs):
         super(PhasedLSTM, self).__init__(name=name)
         
         self.units = units
@@ -33,11 +33,11 @@ class PhasedLSTM(Layer):
         self.period_init_min = period_init_min
         self.period_init_max = period_init_max
 
-        self.cell = LSTMCell(units)
+        self.cell = LSTMCell(units, **kwargs)
 
     def _mod(self, x, y):
         """Modulo function that propagates x gradients."""
-        return x%y#tf.stop_gradient((x%y) - x) + x
+        return tf.stop_gradient((x%y) - x) + x
 
     def _get_cycle_ratio(self, time, phase, period):
         """Compute the cycle ratio in the dtype of the time."""
@@ -46,7 +46,7 @@ class PhasedLSTM(Layer):
         time = tf.reshape(time, [time.shape[0],1])
         shifted_time = time - phase_casted
         cycle_ratio = (shifted_time%period_casted) / period_casted
-        return cycle_ratio#tf.cast(cycle_ratio, dtype=tf.float32)
+        return tf.cast(cycle_ratio, dtype=tf.float32)
 
     def build(self, input_shape):
         self.period = self.add_weight(
