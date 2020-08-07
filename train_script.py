@@ -12,10 +12,9 @@ except:
 	print('Using -by default- GPU number 0')
 
 
-unit_type = sys.argv[3]
+normalization = sys.argv[3]
 
-# for unit_type in ['plstm', 'lstm']:
-for normalization in ['n1','n2']:
+for unit_type in ['plstm', 'lstm']:
 	for fold_n in range(3):
 	    start = time. time()
 	    command1 = 'python main.py {} --dataset {} \

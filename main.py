@@ -20,9 +20,9 @@ flags.DEFINE_integer("batch_size", 400, "number of samples involved in a single 
 flags.DEFINE_float('lr', 1e-3, "Learning rate")
 flags.DEFINE_float('dropout', 0.5, "Dropout Probability to be applied at the output of each RNN")
 flags.DEFINE_integer("epochs", 2000, "Number of epochs")
-flags.DEFINE_integer("units", 32, "Number of neurons")
+flags.DEFINE_integer("units", 256, "Number of neurons")
 flags.DEFINE_integer("layers", 2, "Number of recurrent layers")
-flags.DEFINE_integer("patience", 30, "Number of epochs to activate early stop")
+flags.DEFINE_integer("patience", 40, "Number of epochs to activate early stop")
 
 
 def main(argv):
