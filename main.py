@@ -50,14 +50,14 @@ def main(argv):
 								 layers=FLAGS.layers, 
 								 dropout=FLAGS.dropout, 
 								 lr=FLAGS.lr,
-								 name='PhasedClassifier')
+								 name=name)
 	if FLAGS.rnn_unit == 'lstm':
 		model = LSTMClassifier(units=FLAGS.units, 
 							   n_classes=n_classes, 
 							   layers=FLAGS.layers,
 							   dropout=FLAGS.dropout,
 							   lr=FLAGS.lr,
-						   	   name='LSTMClassifier')
+						   	   name=name)
 
 	model.fit(train_batches, 
 			  val_batches, 
