@@ -14,7 +14,7 @@ class LSTMClassifier(tf.keras.Model):
         self._name  = name
         self.num_layers = layers
 
-        cells, norm_layers = []
+        cells, norm_layers = [], []
         for layer in range(self.num_layers):
             cell = LSTMCell(self._units, 
                             name='layer_{}'.format(layer))
