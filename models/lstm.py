@@ -1,6 +1,6 @@
 import tensorflow as tf 
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.layers import LayerNormalization, LSTMCell, RNN
+from tensorflow.keras.layers import LayerNormalization, LSTMCell, RNN, BatchNormalization
 import time
 
 from os import path
@@ -19,7 +19,7 @@ class LSTMClassifier(tf.keras.Model):
             cell = LSTMCell(self._units, 
                             name='layer_{}'.format(layer),
                             dropout=dropout,
-                            recurrent_regularizer=LayerNormalization())
+                            recurrent_regularizer=BatchNormalization())
             cells.append(cell)
         
         self.cells = cells

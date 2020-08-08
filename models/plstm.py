@@ -18,15 +18,15 @@ class PhasedClassifier(tf.keras.Model):
         self._name  = name
         self.num_layers = layers
 
-        cells = []
+        cells, norm_layers = []
         for layer in range(self.num_layers):
             cell = PhasedLSTM(self._units, 
                               name='rnn_{}'.format(layer), 
-                              dropout=dropout,
-                              recurrent_regularizer=LayerNormalization())
+                              dropout=dropout)
             cells.append(cell)
-
+            norm_layers.append(LayerNormalization())
         self.cells = cells
+        self.norm_layers = norm_layers
         self.fc = tf.keras.layers.Dense(n_classes,
                                         activation='softmax',
                                         dtype='float32')
@@ -51,6 +51,7 @@ class PhasedClassifier(tf.keras.Model):
             new_states = []
             for layer in range(self.num_layers):
                 hidden_state, states = self.cells[layer](output, cur_state[layer])
+                hidden_state = self.norm_layers[layer](hidden_state)
                 output = (hidden_state, t_t[i])
                 new_states.append(states)
             return tf.add(i, 1), new_states, out.write(i, self.fc(hidden_state))
