@@ -21,16 +21,16 @@ class PhasedClassifier(tf.keras.Model):
         cells, norm_layers = []
         for layer in range(self.num_layers):
             cell = PhasedLSTM(self._units, 
-                              name='rnn_{}'.format(layer), 
-                              dropout=dropout)
+                              name='rnn_{}'.format(layer))
             cells.append(cell)
             norm_layers.append(LayerNormalization())
+
         self.cells = cells
         self.norm_layers = norm_layers
         self.fc = tf.keras.layers.Dense(n_classes,
                                         activation='softmax',
                                         dtype='float32')
-
+        self.dropout = tf.keras.layers.Dropout(dropout)
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
         
     @tf.function
@@ -54,7 +54,10 @@ class PhasedClassifier(tf.keras.Model):
                 hidden_state = self.norm_layers[layer](hidden_state)
                 output = (hidden_state, t_t[i])
                 new_states.append(states)
-            return tf.add(i, 1), new_states, out.write(i, self.fc(hidden_state))
+
+            hidden_state = self.dropout(hidden_state)
+            logits = self.fc(hidden_state)
+            return tf.add(i, 1), new_states, out.write(i, logits)
 
         _, cur_state, out = tf.while_loop(
             lambda a, b, c: a < time_steps,

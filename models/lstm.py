@@ -1,6 +1,6 @@
 import tensorflow as tf 
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.layers import LayerNormalization, LSTMCell, RNN, BatchNormalization
+from tensorflow.keras.layers import LayerNormalization, LSTMCell, RNN
 import time
 
 from os import path
@@ -14,19 +14,20 @@ class LSTMClassifier(tf.keras.Model):
         self._name  = name
         self.num_layers = layers
 
-        cells = []
+        cells, norm_layers = []
         for layer in range(self.num_layers):
             cell = LSTMCell(self._units, 
-                            name='layer_{}'.format(layer),
-                            dropout=dropout,
-                            recurrent_regularizer=BatchNormalization())
+                            name='layer_{}'.format(layer))
             cells.append(cell)
+            norm_layers.append(LayerNormalization())
         
         self.cells = cells
+        self.norm_layers = norm_layers
         self.fc = tf.keras.layers.Dense(n_classes,
                                         activation='softmax',
                                         dtype='float32')
 
+        self.dropout = tf.keras.layers.Dropout(dropout)
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
         
     @tf.function
@@ -44,8 +45,11 @@ class LSTMClassifier(tf.keras.Model):
             new_states = []
             for layer in range(self.num_layers):
                 output, cur_state = self.cells[layer](output, states[layer])
+                output = self.norm_layers[layer](output)
                 new_states.append(cur_state) # Save current layer state
-            return tf.add(i, 1), new_states, out.write(i, self.fc(output))
+            output = self.dropout(output)
+            logits = self.fc(output)
+            return tf.add(i, 1), new_states, out.write(i, logits)
 
         _, cur_state, out = tf.while_loop(
             lambda a, b, c: a < time_steps,
