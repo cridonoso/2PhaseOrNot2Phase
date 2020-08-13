@@ -68,7 +68,7 @@ class PhasedLSTM(Layer):
                                         initializer=constant_initializer(self._ratio_on),
                                         trainable=True)
 
-    def call(self, input, states):
+    def call(self, input, states, return_k=False):
         inputs, times = input
 
         # =================================
@@ -94,6 +94,5 @@ class PhasedLSTM(Layer):
         # =================================
         new_h = k * hs + (1 - k) * prev_hs
         new_c = k * cs + (1 - k) * prev_cs
-
-
-        return output, (new_h, new_c)
+        
+        return new_h, (new_h, new_c)

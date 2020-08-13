@@ -32,7 +32,69 @@ class PhasedClassifier(tf.keras.Model):
                                         dtype='float32')
         self.dropout = tf.keras.layers.Dropout(dropout)
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
+
+    @tf.function
+    def get_time_gates(self, inputs, times, training=False):
+
+        initial_state = []
+        for k in range(self.num_layers):
+            initial_state.append((tf.zeros([inputs.shape[0], self._units]),
+                                  tf.zeros([inputs.shape[0], self._units])))
+
+        x_t = tf.transpose(inputs, [1, 0, 2])
+        t_t = tf.transpose(times, [1, 0])
         
+        time_steps = tf.shape(x_t)[0]
+
+        def compute(i, cur_state, out):
+            output = (x_t[i], t_t[i])
+            new_states = []
+            for layer in range(self.num_layers):
+                hidden_state, states = self.cells[layer](output, cur_state[layer])
+                hidden_state = self.norm_layers[layer](hidden_state)
+                output = (hidden_state, t_t[i])
+                new_states.append(states)
+            return tf.add(i, 1), new_states, out.write(i, hidden_state)
+
+        _, cur_state, out = tf.while_loop(
+            lambda a, b, c: a < time_steps,
+            compute,
+            (tf.constant(0), initial_state, tf.TensorArray(tf.float32, time_steps))
+        )
+
+        return tf.transpose(out.stack(), [1,0,2])
+    
+    @tf.function
+    def get_states(self, inputs, times, training=False):
+
+        initial_state = []
+        for k in range(self.num_layers):
+            initial_state.append((tf.zeros([inputs.shape[0], self._units]),
+                                  tf.zeros([inputs.shape[0], self._units])))
+
+        x_t = tf.transpose(inputs, [1, 0, 2])
+        t_t = tf.transpose(times, [1, 0])
+        
+        time_steps = tf.shape(x_t)[0]
+
+        def compute(i, cur_state, out):
+            output = (x_t[i], t_t[i])
+            new_states = []
+            for layer in range(self.num_layers):
+                hidden_state, states = self.cells[layer](output, cur_state[layer])
+                hidden_state = self.norm_layers[layer](hidden_state)
+                output = (hidden_state, t_t[i])
+                new_states.append(states)
+            return tf.add(i, 1), new_states, out.write(i, hidden_state)
+
+        _, cur_state, out = tf.while_loop(
+            lambda a, b, c: a < time_steps,
+            compute,
+            (tf.constant(0), initial_state, tf.TensorArray(tf.float32, time_steps))
+        )
+
+        return tf.transpose(out.stack(), [1,0,2])
+    
     @tf.function
     def call(self, inputs, times, training=False):
 

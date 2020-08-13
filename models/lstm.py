@@ -31,6 +31,34 @@ class LSTMClassifier(tf.keras.Model):
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
         
     @tf.function
+    def get_states(self, inputs, times, training=False):
+        initial_state = []
+        for k in range(self.num_layers):
+            initial_state.append([tf.zeros([inputs.shape[0], self._units]),
+                                  tf.zeros([inputs.shape[0], self._units])])
+
+        x_t = tf.transpose(inputs, [1, 0, 2])
+        time_steps = tf.shape(x_t)[0]
+
+        def compute(i, states, out):
+            output = x_t[i]
+            new_states = []
+            for layer in range(self.num_layers):
+                output, cur_state = self.cells[layer](output, states[layer])
+                output = self.norm_layers[layer](output)
+                new_states.append(cur_state) # Save current layer state
+            return tf.add(i, 1), new_states, out.write(i, output)
+
+        _, cur_state, out = tf.while_loop(
+            lambda a, b, c: a < time_steps,
+            compute,
+            (tf.constant(0), initial_state, tf.TensorArray(tf.float32, time_steps))
+        )
+
+        return tf.transpose(out.stack(), [1,0,2])
+
+    
+    @tf.function
     def call(self, inputs, training=False):
         initial_state = []
         for k in range(self.num_layers):
@@ -157,22 +185,22 @@ class LSTMClassifier(tf.keras.Model):
                 print('EARLY STOPPING ACTIVATED')
                 break
 
-    def predict_proba(self, test_batches):
+    def predict_proba(self, test_batches, concat_batches=False):
         t0 = time.time()
         predictions = []
         true_labels = []
 
         for test_batch in test_batches:
-            y_pred = self(test_batch[0], test_batch[2])
+            y_pred = self(test_batch[0], training=True)
             predictions.append(mask_pred(y_pred, test_batch[2]))
             true_labels.append(test_batch[1])
 
         t1 = time.time()
         print('runtime {:.2f}'.format((t1-t0)))
-        # predictions = tf.concat(predictions, 0)
-        # true_labels = tf.concat(true_labels, 0)
-        return predictions, true_labels
-
+        if concat_batches:
+            return tf.concat(predictions, 0), tf.concat(true_labels, 0)
+        else:
+            return predictions, true_labels
 
     def load_ckpt(self, ckpt_path):
         ckpt = tf.train.Checkpoint(step=tf.Variable(1),
