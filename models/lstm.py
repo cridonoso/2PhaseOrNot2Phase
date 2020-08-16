@@ -104,7 +104,7 @@ class LSTMClassifier(tf.keras.Model):
         acc = tf.keras.metrics.categorical_accuracy(y_true, last_probas)
         return tf.reduce_mean(acc)
 
-    def fit(self, train, val, epochs, patience=5, save_path='.'):
+    def fit(self, train, val, epochs, patience=5, save_path='.', finetunning=False):
         
         # Tensorboard 
         train_log_dir = '{}/{}/logs/train'.format(save_path, self._name)
@@ -124,7 +124,7 @@ class LSTMClassifier(tf.keras.Model):
                                              max_to_keep=1)
 
 
-        if path.isdir(ckpts_path):
+        if path.isdir(ckpts_path) and finetunning:
             self.load_ckpt(ckpts_path)
             print('[INFO] WEIGHTS SUCCEFULLY LOADED')
 
