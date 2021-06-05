@@ -1,7 +1,7 @@
 # An Ensemble Recurrent Neural Architecture for the Classification of Unfolded Light Curves
 
 This repository contains the implementation of the light curve classifier described in C. Donoso-Oliva et al., 2021.
-
+![alt text](https://github.com/cridonoso/plstm_tf2/blob/master/scores.png?raw=true)
 ## Requirements
 The faster way to run the code is creating a [conda](https://docs.conda.io/en/latest/miniconda.html) environment as follows:
 ```
