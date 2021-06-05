@@ -1,6 +1,6 @@
 # An Ensemble Recurrent Neural Architecture for the Classification of Unfolded Light Curves
 
-In this repository, you can find the code for the light curve classifier described in C. Donoso Oliva et al., 20xx.
+This repository contains the implementation of the light curve classifier described in C. Donoso-Oliva et al., 2021.
 
 ## Requirements
 The faster way to run the code is creating a [conda](https://docs.conda.io/en/latest/miniconda.html) environment as follows:
@@ -15,14 +15,22 @@ pip install -r requirements.txt
 ```
 
 ## Folders and files
-- `main.py`: The principal script that loads the data and instances the models (use --help to see running options)
-- `get_data.py`: Script to download data
-- `data.py`: Contains relevant function for loading and creating [records](https://www.tensorflow.org/tutorials/load_data/tfrecord).
 - `./models/`: This folder includes the LSTM and Phased LSTM model class.
   - `plstm.py`: Phased LSTM classifier following the architecture explained in the paper.
   - `lstm.py`: LSTM classifier following the architecture explained in the paper.
   - `./layers/`: Custom layers used on this work
     - `phased.py`: Phased LSTM unit. It consists in a LSTM + time gate
+- `data.py`: Contains relevant function for loading and creating [records](https://www.tensorflow.org/tutorials/load_data/tfrecord).
+- `get_data.py`: Script to download data
+- `main.py`: Main script that loads the data and instances the models (use --help to see running options) for training
+- `predict`: Prediction script which receive 4 (sys.argv) arguments: 
+  - dataset (record path)
+  - rnn_type (etiher plstm or lstm) 
+  - fold_n (according to our kfold)
+  - norm (nromalization technique - n1 or n2)
+- `\{train, test\}\_script.py`: Code routines for hyperparameter tuning
+### Additional not included folders
+For storage reasons we do not upload `experiments` and `results` folders which contain adjusted models and metrics/figures, respectively. Although they are not in this repo, you can download them using this link. Once downloaded paste the folders into the root directory.
 
 ## Downloading data
 You can download data in their raw format or preprocessed record. Getting records implies using the same folds as the author.
@@ -35,3 +43,6 @@ You can download data in their raw format or preprocessed record. Getting record
     python get_data.py --dataset linear --record 
   ```
  Alternatively, you can download directly from [google drive](https://drive.google.com/drive/folders/1m2fXqn25LYSyG5jEbpM3Yfdbpx9EQCDo?usp=sharing)
+
+## Creating your own data
+For custom training, please convert your data to `tf.Record` using the standard function `create_record(light_curves, labels, path='')` in `./data.py`
