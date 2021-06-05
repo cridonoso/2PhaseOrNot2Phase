@@ -33,7 +33,7 @@ pip install -r requirements.txt
   - norm     : nomalization technique -i.e., n1 or n2
 - `{train, test}_script.py`: Code routines for hyperparameter tuning
 ### Additional not included folders
-For storage reasons we do not upload `experiments` and `results` folders which contain adjusted models and metrics/figures, respectively. Although they are not in this repo, you can download them using [experiments link](https://drive.google.com/file/d/1swyqP8BHayRSX8CYxe2O0p9wrS5msDdN/view?usp=sharing) and [results link](www.google.cl). Once downloaded paste the folders into the root directory.
+For storage reasons we do not upload `experiments` and `results` folders which contain adjusted models and metrics/figures, respectively. Although they are not in this repo, you can download them using the [experiments link](https://drive.google.com/file/d/1swyqP8BHayRSX8CYxe2O0p9wrS5msDdN/view?usp=sharing) or the [results link](www.google.cl). Once downloaded paste the folders into the root directory.
 
 ## Downloading data
 You can download data in their raw format or preprocessed record. Getting records implies using the same folds as the author.
