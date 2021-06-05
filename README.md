@@ -24,10 +24,10 @@ pip install -r requirements.txt
 - `get_data.py`: Script to download data
 - `main.py`: Main script that loads the data and instances the models (use --help to see running options) for training
 - `predict`: Prediction script which receive 4 (sys.argv) arguments: 
-  - dataset (record path)
-  - rnn_type (etiher plstm or lstm) 
-  - fold_n (according to our kfold)
-  - norm (nromalization technique - n1 or n2)
+  - dataset  : record path
+  - rnn_type : either plstm or lstm 
+  - fold_n   : according to our kfold
+  - norm     : nomalization technique -i.e., n1 or n2
 - `{train, test}\_script.py`: Code routines for hyperparameter tuning
 ### Additional not included folders
 For storage reasons we do not upload `experiments` and `results` folders which contain adjusted models and metrics/figures, respectively. Although they are not in this repo, you can download them using this link. Once downloaded paste the folders into the root directory.
