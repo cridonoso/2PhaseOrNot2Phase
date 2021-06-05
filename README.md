@@ -1,9 +1,10 @@
-# An Ensemble Recurrent Neural Architecture for the Classification of Unfolded Light Curves
+# The effect of phased recurrent units in the classification of multiple catalogs of astronomical lightcurves
+### The L+P architecture
 
 This repository contains the implementation of the light curve classifier described in C. Donoso-Oliva et al., 2021.
 ![alt text](https://github.com/cridonoso/plstm_tf2/blob/master/scores.png?raw=true)
 
-**NOTE: A new version is being developed at this link. It will contain new experimental features and code best practices. (not yet evaluated)**
+**NOTE: A new version of the L+P is being developed at this link. It will contain new experimental features and code best practices. (not yet evaluated)**
 
 ## Requirements
 The faster way to run the code is creating a [conda](https://docs.conda.io/en/latest/miniconda.html) environment as follows:
