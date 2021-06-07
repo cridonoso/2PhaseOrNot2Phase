@@ -5,7 +5,6 @@ from google_drive_downloader import GoogleDriveDownloader as gdd
 
 dataset_id = {
 	'raw':{
-		'ztf': '1RY3pwZ5uYJ9HvlNUlivt-DsIbBXHYWx2',
 		'wise': '1O-cFXWjuTMNNfWjVQCyEAa2IoAJFSPI6',
 		'ogle': '1whdP_2SdMSHcODu8ItTWfM0tI-frGhie',
 		'macho': '1zFkrP2TCYoGa3yWkrtymVDmWjLlViIpp',
@@ -15,7 +14,6 @@ dataset_id = {
 		'asas': '1ouQmBedVok5LNH2u2aEQjAvl0KchrmTI',
 	},
 	'record':{
-		'ztf': '',
 		'wise': '1hBrSxw71qaJW09MX7iZTrbUVU5vie4oC',
 		'ogle': '17fIJ2L6jNjE1J1OkJ9jksGfXvH4CGzI7',
 		'macho': '13en9ltKt4NacRw2ETTxAbCgc5EP3YrbK',
