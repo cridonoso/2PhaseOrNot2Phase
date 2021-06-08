@@ -1,6 +1,6 @@
 # The effect of phased recurrent units in the classification of multiple catalogs of astronomical lightcurves
 
-This repository contains the implementation of the light curve classifier (L+P) described in C. Donoso-Oliva et al., 2021.
+This repository contains the implementation of the light curve classifier (L+P) described in ![C. Donoso-Oliva et al., 2021](https://arxiv.org/abs/2106.03736).
 ![alt text](https://github.com/cridonoso/plstm_tf2/blob/master/scores.png?raw=true)
 
 **NOTE: A new version of the L+P is being developed at this link. It will contain new experimental features and code best practices. (not yet evaluated)**
