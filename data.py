@@ -107,7 +107,7 @@ def get_sample(sample):
         casted_inp_parameters.append(seq_dim)
 
     x = tf.stack(casted_inp_parameters, axis=2)[0]
-    x = standardize(x, 1)
+    x = standardize(x, 0)
 
     mask = tf.sparse.to_dense(sequence['mask'])
     mask = tf.cast(mask, tf.bool)
