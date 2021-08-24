@@ -13,6 +13,7 @@ except:
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("dataset", "./data/records/train", "path")
+flags.DEFINE_string("p", "ztf", "experiment name")
 flags.DEFINE_string("rnn_unit", "plstm", "Recurrent unit (lstm or plstm)")
 flags.DEFINE_integer("batch_size", 256, "number of samples involved in a single forward-backward")
 flags.DEFINE_float('lr', 1e-3, "Learning rate")
