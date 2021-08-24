@@ -22,10 +22,10 @@ flags.DEFINE_integer("patience", 25, "Number of epochs to activate early stop")
 
 
 def main(argv):
-	train_batches = data.load_record(path='{}/train.record'.format(FLAGS.dataset),
+	train_batches = data.load_record(path='{}/train'.format(FLAGS.dataset),
 									batch_size=FLAGS.batch_size,
 									take=100)
-	val_batches   = data.load_record(path='{}/val.record'.format(FLAGS.dataset),
+	val_batches   = data.load_record(path='{}/val'.format(FLAGS.dataset),
 	                                 batch_size=FLAGS.batch_size,
 									 take=100)
 
