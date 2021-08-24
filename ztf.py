@@ -3,7 +3,7 @@ import pandas as pd
 
 class_code = {
             'AGN'	 :0,
-            'Blazar' :1, 
+            'Blazar' :1,
             'CV/Nova':2,
             'Ceph'	 :3,
             'DSCT'	 :4,
@@ -28,11 +28,11 @@ class_code = {
             }
 
 def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=1e6):
-    """Open a csv of ZTF detection and convert observation 
+    """Open a csv of ZTF detection and convert observation
     to a list of lightcurves
 
     Arguments:
-        metapath {[str]} -- [metadata associated with objects 
+        metapath {[str]} -- [metadata associated with objects
                             (e.g., class)]
         det_path {[str]} -- [csv with detections]
 
@@ -50,8 +50,8 @@ def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=
 
     if chunks:
         for chunk in pd.read_csv(det_path, chunksize=chunksize, low_memory=False):
-            result = pd.merge(chunk[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid']], 
-                              metadata_df[['oid', 'classALeRCE']], 
+            result = pd.merge(chunk[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid']],
+                              metadata_df[['oid', 'classALeRCE']],
                               on='oid')
 
             objects = result.groupby('oid')
@@ -65,8 +65,8 @@ def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=
     else:
         # ======== RAM expensive ==========
         detections = pd.read_csv(det_path, low_memory=False)
-        result = pd.merge(detections[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid', 'rb', 'corrected']], 
-                          metadata_df[['oid', 'classALeRCE']], 
+        result = pd.merge(detections[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid', 'rb', 'corrected']],
+                          metadata_df[['oid', 'classALeRCE']],
                           on='oid')
 
         objects = result.groupby('oid')
@@ -80,9 +80,9 @@ def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=
     return light_curves, labels, oids
 
 def pad_lightcurves(lightcurves, labels, oids, maxobs=200):
-    ''' Take a list of lightcurves and pad them. 
+    ''' Take a list of lightcurves and pad them.
 
-    It also takes subsamples of observations based on 
+    It also takes subsamples of observations based on
     maxobs. In other words, we cut the light curve
     in batches of <maxobs> observations
 
@@ -91,7 +91,7 @@ def pad_lightcurves(lightcurves, labels, oids, maxobs=200):
         labels {[labels]} -- [list of label codes]
 
     Keyword Arguments:
-        maxobs {number} -- [max number of observations whitin 
+        maxobs {number} -- [max number of observations whitin
                             the light curve] (default: {200})
 
     Returns:
@@ -126,4 +126,3 @@ def pad_lightcurves(lightcurves, labels, oids, maxobs=200):
             new_oids.append(oids[k])
 
     return np.array(new_lightcurves), np.array(new_labels), np.array(masks), np.array(new_oids)
-
