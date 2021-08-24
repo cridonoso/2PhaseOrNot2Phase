@@ -126,7 +126,7 @@ def load_record(path, batch_size, take=1, standardize=False):
     datasets = [dataset.map(get_sample) for dataset in datasets]
     datasets = [dataset.shuffle(batch_size, reshuffle_each_iteration=True) for dataset in datasets]
     dataset = tf.data.experimental.sample_from_datasets(datasets)
-    dataset = dataset.padded_batch(batch_size)
+    dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     dataset = dataset.cache()
     return dataset.take(take)
