@@ -59,7 +59,7 @@ def create_record(light_curves, labels, masks, oids, path=''):
         class_msk = oids[labels == unq_clss]
         class_lab = labels[labels == unq_clss]
 
-        with tf.io.TFRecordWriter(os.path.join(path, '{}.record'.format(unq_clss)) as writer:
+        with tf.io.TFRecordWriter(os.path.join(path, '{}.record'.format(unq_clss))) as writer:
             for x, y, oid, mask in zip(class_lcs, class_lab, class_oid, class_msk):
                 # Make a record example for time series
                 ex = get_example(oid, y, x, mask, n_classes) # number of classes whithin the dataset
