@@ -24,23 +24,16 @@ flags.DEFINE_integer("patience", 25, "Number of epochs to activate early stop")
 
 
 def main(argv):
-	fold_path  =  './datasets/records/{}/fold_{}/{}/'.format(FLAGS.dataset, 
-															  FLAGS.fold_n, 
-															  FLAGS.normalization)
-
-
-	train_batches = data.load_record(path='{}/train.tfrecords'.format(fold_path), 
-									batch_size=FLAGS.batch_size)
-	val_batches   = data.load_record(path='{}/val.tfrecords'.format(fold_path), 
-	                                 batch_size=FLAGS.batch_size)
+	train_batches = data.load_record(path='{}/train.record'.format(FLAGS.dataset),
+									batch_size=FLAGS.batch_size,
+									take=100)
+	val_batches   = data.load_record(path='{}/val.record'.format(FLAGS.dataset),
+	                                 batch_size=FLAGS.batch_size,
+									 take=100)
 
 
 	n_classes = [len(b[1][0]) for b in train_batches.take(1)][0]
-	name = '{}_{}/fold_{}/{}_{}'.format(FLAGS.dataset, 
-										FLAGS.normalization, 
-										FLAGS.fold_n, 
-										FLAGS.rnn_unit, 
-										FLAGS.units)
+	name = '{}/{}_{}'.format(FLAGS.dataset,	FLAGS.rnn_unit, FLAGS.units)
 
 	if FLAGS.rnn_unit == 'plstm':
 		model = PhasedClassifier(units=FLAGS.units, n_classes=n_classes, name=name, lr=FLAGS.lr)
@@ -48,10 +41,10 @@ def main(argv):
 		model = LSTMClassifier(units=FLAGS.units, n_classes=n_classes, name=name, lr=FLAGS.lr)
 
 
-	model.fit(train_batches, 
-			  val_batches, 
-			  FLAGS.epochs, 
-			  patience=FLAGS.patience, 
+	model.fit(train_batches,
+			  val_batches,
+			  FLAGS.epochs,
+			  patience=FLAGS.patience,
 			  save_path='./experiments/')
 
 if __name__ == '__main__':

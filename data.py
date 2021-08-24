@@ -67,6 +67,13 @@ def create_record(light_curves, labels, masks, oids, path=''):
 
                 writer.write(ex.SerializeToString())
 
+def standardize(tensor, axis=0):
+    mean_value = tf.reduce_mean(tensor, axis, name='mean_value')
+    if axis == 1:
+        mean_value = tf.expand_dims(mean_value, axis)
+    normed = tensor - mean_value
+    return normed
+
 def get_sample(sample):
     '''
     Read a serialized sample and convert it to tensor
@@ -100,6 +107,7 @@ def get_sample(sample):
         casted_inp_parameters.append(seq_dim)
 
     x = tf.stack(casted_inp_parameters, axis=2)[0]
+    x = standardize(x, 0)
 
     mask = tf.sparse.to_dense(sequence['mask'])
     mask = tf.cast(mask, tf.bool)
