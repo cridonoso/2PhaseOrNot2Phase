@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import os
 
 
 def _bytes_feature(value):
@@ -30,9 +31,9 @@ def get_example(lcid, label, lightcurve, mask, n_classes):
         seqfeat = _float_feature(lightcurve[:, col])
         seqfeat = tf.train.FeatureList(feature = [seqfeat])
         dict_sequence['dim_{}'.format(col)] = seqfeat
-    
+
     dict_sequence['mask'] = tf.train.FeatureList(feature = [_float_feature(mask)])
-    
+
     element_lists = tf.train.FeatureLists(feature_list=dict_sequence)
     ex = tf.train.SequenceExample(context = element_context,
                                   feature_lists= element_lists)
@@ -43,26 +44,28 @@ def create_record(light_curves, labels, masks, oids, path=''):
     ''' Create a tf record given a list of light curves
 
     Arguments:
-        light_curves: list of light curves. 
+        light_curves: list of light curves.
                       Each sample should be a numpy array of n_obs x 3
                       where 3 = time, magnitude, error
         labels      : List of labels. Each class should be defined by an INT identifier
         path        : Path for saving
     '''
 
-    if not path.endswith('.record'): path+='.record'
-    
     n_classes = len(np.unique(labels))
 
-    with tf.io.TFRecordWriter(path) as writer:
-    
-        for x, y, oid, mask in zip(light_curves, labels, oids, masks):
+    for unq_clss in np.unique(labels):
+        class_lcs = light_curves[labels == unq_clss]
+        class_oid = masks[labels == unq_clss]
+        class_msk = oids[labels == unq_clss]
+        class_lab = labels[labels == unq_clss]
 
-            # Make a record example for time series
-            ex = get_example(oid, y, x, mask, n_classes) # number of classes whithin the dataset 
-                                         # (needed for later onehot encoding)
+        with tf.io.TFRecordWriter(os.path.join(path, '{}.record'.format(unq_clss)) as writer:
+            for x, y, oid, mask in zip(class_lcs, class_lab, class_oid, class_msk):
+                # Make a record example for time series
+                ex = get_example(oid, y, x, mask, n_classes) # number of classes whithin the dataset
+                                             # (needed for later onehot encoding)
 
-            writer.write(ex.SerializeToString())
+                writer.write(ex.SerializeToString())
 
 def get_sample(sample):
     '''
@@ -75,9 +78,9 @@ def get_sample(sample):
     sequence_features = dict()
     for i in range(3):
         sequence_features['dim_{}'.format(i)] = tf.io.VarLenFeature(dtype=tf.float32)
-    
+
     sequence_features['mask'] = tf.io.VarLenFeature(dtype=tf.float32)
-    
+
     context, sequence = tf.io.parse_single_sequence_example(
                             serialized=sample,
                             context_features=context_features,
@@ -97,33 +100,33 @@ def get_sample(sample):
         casted_inp_parameters.append(seq_dim)
 
     x = tf.stack(casted_inp_parameters, axis=2)[0]
-    
+
     mask = tf.sparse.to_dense(sequence['mask'])
     mask = tf.cast(mask, tf.bool)
     mask = tf.squeeze(mask)
-    
+
     y = context['label']
     y_one_hot = tf.one_hot(y, tf.cast(context['n_classes'], tf.int32))
-    
+
     return x, y_one_hot, mask
 
 def load_record(path, batch_size, standardize=False):
     """ Data loader for irregular time series with masking"
-    
+
     Arguments:
         path {[str]} -- [record location]
-        batch_size {[number]} -- [number of samples to be used in 
+        batch_size {[number]} -- [number of samples to be used in
                                   neural forward pass]
-    
+
     Returns:
         [tensorflow dataset] -- [batches to feed the model]
     """
     dataset = tf.data.TFRecordDataset(path)
-    dataset = dataset.map(lambda x: get_sample(x), 
+    dataset = dataset.map(lambda x: get_sample(x),
                           num_parallel_calls=tf.data.experimental.AUTOTUNE)
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache
 #     dataset = dataset.shuffle(10000)
-    dataset = dataset.cache() 
+    dataset = dataset.cache()
     batches = dataset.batch(batch_size)
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#prefetch
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
