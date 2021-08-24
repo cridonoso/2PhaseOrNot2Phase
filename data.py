@@ -71,7 +71,7 @@ def get_sample(sample):
     context_features = {'label': tf.io.FixedLenFeature([],dtype=tf.int64),
                         'length': tf.io.FixedLenFeature([],dtype=tf.int64),
                         'id': tf.io.FixedLenFeature([], dtype=tf.string),
-                        'n_classes': tf.io.FixedLenFeature([], dtype=tf.string)}
+                        'n_classes': tf.io.FixedLenFeature([], dtype=tf.int64)}
     sequence_features = dict()
     for i in range(3):
         sequence_features['dim_{}'.format(i)] = tf.io.VarLenFeature(dtype=tf.float32)
@@ -96,15 +96,16 @@ def get_sample(sample):
         seq_dim = tf.cast(seq_dim, tf.float32)
         casted_inp_parameters.append(seq_dim)
 
-    sequence = tf.stack(casted_inp_parameters, axis=2)[0]
+    x = tf.stack(casted_inp_parameters, axis=2)[0]
     
     mask = tf.sparse.to_dense(sequence['mask'])
     mask = tf.cast(mask, tf.bool)
-            
+    mask = tf.squeeze(mask)
+    
     y = context['label']
     y_one_hot = tf.one_hot(y, tf.cast(context['n_classes'], tf.int32))
     
-    return sequence, y_one_hot, mask
+    return x, y_one_hot, mask
 
 def load_record(path, batch_size, standardize=False):
     """ Data loader for irregular time series with masking"
@@ -121,6 +122,7 @@ def load_record(path, batch_size, standardize=False):
     dataset = dataset.map(lambda x: get_sample(x), 
                           num_parallel_calls=tf.data.experimental.AUTOTUNE)
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache
+#     dataset = dataset.shuffle(10000)
     dataset = dataset.cache() 
     batches = dataset.batch(batch_size)
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#prefetch
