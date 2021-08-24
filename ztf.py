@@ -103,6 +103,7 @@ def pad_lightcurves(lightcurves, labels, oids, maxobs=200):
     new_labels = []
     masks = []
     new_oids = []
+    
     for k in range(n_samples):
         # === Check if times are sorted ====
         indices = np.argsort(lightcurves[k][...,0])
