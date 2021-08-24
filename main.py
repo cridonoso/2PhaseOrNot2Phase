@@ -6,10 +6,7 @@ import sys
 from absl import app
 from absl import flags
 import os
-try:
-	os.environ["CUDA_VISIBLE_DEVICES"]=sys.argv[1]
-except:
-	os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("dataset", "./data/records/train", "path")
