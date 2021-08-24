@@ -55,8 +55,8 @@ def create_record(light_curves, labels, masks, oids, path=''):
     os.makedirs(path, exist_ok=True)
     for unq_clss in np.unique(labels):
         class_lcs = light_curves[labels == unq_clss]
-        class_oid = masks[labels == unq_clss]
-        class_msk = oids[labels == unq_clss]
+        class_oid = oids[labels == unq_clss]
+        class_msk = masks[labels == unq_clss]
         class_lab = labels[labels == unq_clss]
 
         with tf.io.TFRecordWriter(os.path.join(path, '{}.record'.format(unq_clss))) as writer:
