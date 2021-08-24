@@ -2,7 +2,44 @@ import tensorflow as tf
 import numpy as np
 
 
-def create_record(light_curves, labels, path=''):
+def _bytes_feature(value):
+    """Returns a bytes_list from a string / byte."""
+    if isinstance(value, type(tf.constant(0))):
+        value = value.numpy() # BytesList won't unpack a string from an EagerTensor.
+    return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+def _float_feature(list_of_floats):  # float32
+    return tf.train.Feature(float_list=tf.train.FloatList(value=list_of_floats))
+
+def _int64_feature(value):
+    return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+
+def get_example(lcid, label, lightcurve, mask, n_classes):
+    f = dict()
+
+    dict_features={
+    'id': tf.train.Feature(bytes_list=tf.train.BytesList(value=[str(lcid).encode()])),
+    'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[label])),
+    'length': tf.train.Feature(int64_list=tf.train.Int64List(value=[lightcurve.shape[0]])),
+    'n_classes':tf.train.Feature(int64_list=tf.train.Int64List(value=[n_classes]))
+    }
+    element_context = tf.train.Features(feature = dict_features)
+
+    dict_sequence = {}
+    for col in range(lightcurve.shape[1]):
+        seqfeat = _float_feature(lightcurve[:, col])
+        seqfeat = tf.train.FeatureList(feature = [seqfeat])
+        dict_sequence['dim_{}'.format(col)] = seqfeat
+    
+    dict_sequence['mask'] = tf.train.FeatureList(feature = [_float_feature(mask)])
+    
+    element_lists = tf.train.FeatureLists(feature_list=dict_sequence)
+    ex = tf.train.SequenceExample(context = element_context,
+                                  feature_lists= element_lists)
+    return ex
+
+
+def create_record(light_curves, labels, masks, oids, path=''):
     ''' Create a tf record given a list of light curves
 
     Arguments:
@@ -13,104 +50,61 @@ def create_record(light_curves, labels, path=''):
         path        : Path for saving
     '''
 
-    if not path.endswith('.tfrecords'): path+='.tfrecords'
-
-    n_samples = len(light_curves)
-    max_obs   = np.max([x.shape[0] for x in light_curves])
+    if not path.endswith('.record'): path+='.record'
+    
     n_classes = len(np.unique(labels))
 
     with tf.io.TFRecordWriter(path) as writer:
     
-        for x, y in zip(light_curves, labels):
-
-            n_obs = x.shape[0] # current number of observations
-            mask = np.zeros(shape=[max_obs]) # first create an empy vector
-            mask[:n_obs] = np.ones(n_obs) # then replace by ones according to the criteria
-
+        for x, y, oid, mask in zip(light_curves, labels, oids, masks):
 
             # Make a record example for time series
-            ex = make_example(x[:,0], # time
-                              x[:,1], # mean magnitude
-                              x[:,2], # std magnitude
-                              mask, 
-                              y, # integer related with the object class 
-                              n_classes) # number of classes whithin the dataset 
+            ex = get_example(oid, y, x, mask, n_classes) # number of classes whithin the dataset 
                                          # (needed for later onehot encoding)
 
             writer.write(ex.SerializeToString())
 
-def make_example(mjd, mags, err_mags, masks, label, n_classes):
-    ''' Create a record example 
-
-    Given a list of times, mag and errors for a particular light curve 
-    create an example to be saved in tf.record binary format
-
-    Arguments:
-        mjd {[numpy array]} -- [array of times (e.g., MJD)]
-        mags {[numpy array]} -- [array of magnitudes (it could be flux too)]
-        err_mags {[numpy array]} -- [array of observational errors]
-        mask {[numpy array]} -- 
-    Returns:
-        [record example] -- [record sequence example]
+def get_sample(sample):
     '''
-
-    ex = tf.train.SequenceExample()
-    # No depends on time
-    ex.context.feature["label"].int64_list.value.append(np.int32(label))
-    ex.context.feature["n_classes"].int64_list.value.append(np.int32(n_classes))
-
-    # Temporal features
-    fl_mjd = ex.feature_lists.feature_list["mjd"]
-    fl_flux = ex.feature_lists.feature_list["mags"]
-    fl_err = ex.feature_lists.feature_list["err_mags"]
-    fl_mask = ex.feature_lists.feature_list["mask"]
-
-    for index in tf.range(len(mjd)):
-        fl_mjd.feature.add().float_list.value.append(mjd[index])
-        fl_flux.feature.add().float_list.value.append(mags[index])
-        fl_err.feature.add().float_list.value.append(err_mags[index])
-        fl_mask.feature.add().float_list.value.append(masks[index])
-
-    return ex
-
-def read_tfrecord(serialized_example):
-    """Read record serialized example
+    Read a serialized sample and convert it to tensor
+    '''
+    context_features = {'label': tf.io.FixedLenFeature([],dtype=tf.int64),
+                        'length': tf.io.FixedLenFeature([],dtype=tf.int64),
+                        'id': tf.io.FixedLenFeature([], dtype=tf.string),
+                        'n_classes': tf.io.FixedLenFeature([], dtype=tf.string)}
+    sequence_features = dict()
+    for i in range(3):
+        sequence_features['dim_{}'.format(i)] = tf.io.VarLenFeature(dtype=tf.float32)
     
-    Arguments:
-        serialized_example {[string record]} -- [example containing the light curve]
+    sequence_features['mask'] = tf.io.VarLenFeature(dtype=tf.float32)
     
-    Returns:
-        [x3 tensors] -- [Tensor relating with the observations, one hot labels and mask]
-    """
-    context_features = {
-        "label": tf.io.FixedLenFeature([], dtype=tf.int64),
-        "n_classes": tf.io.FixedLenFeature([], dtype=tf.int64)
-    }
-    
-    sequence_features = {
-        "mjd": tf.io.FixedLenSequenceFeature([], dtype=tf.float32),
-        "mags": tf.io.FixedLenSequenceFeature([], dtype=tf.float32),
-        "err_mags": tf.io.FixedLenSequenceFeature([], dtype=tf.float32),
-        "mask": tf.io.FixedLenSequenceFeature([], dtype=tf.float32)
-    }
+    context, sequence = tf.io.parse_single_sequence_example(
+                            serialized=sample,
+                            context_features=context_features,
+                            sequence_features=sequence_features
+                            )
 
-    context_parsed, sequence_parsed = tf.io.parse_single_sequence_example(
-        serialized=serialized_example,
-        sequence_features=sequence_features,
-        context_features =context_features
-    )
-    
-    x = tf.stack([sequence_parsed['mjd'],
-                  sequence_parsed['mags'],
-                  sequence_parsed['err_mags']
-                  ], axis=1)
-    
-    y = context_parsed['label']
-    y_one_hot = tf.one_hot(y, tf.cast(context_parsed['n_classes'], tf.int32))
-    m = sequence_parsed['mask']
-    
-    return x, y_one_hot, m
+    input_dict = dict()
+    input_dict['lcid']   = tf.cast(context['id'], tf.string)
+    input_dict['length'] = tf.cast(context['length'], tf.int32)
+    input_dict['label']  = tf.cast(context['label'], tf.int32)
 
+    casted_inp_parameters = []
+    for i in range(3):
+        seq_dim = sequence['dim_{}'.format(i)]
+        seq_dim = tf.sparse.to_dense(seq_dim)
+        seq_dim = tf.cast(seq_dim, tf.float32)
+        casted_inp_parameters.append(seq_dim)
+
+    sequence = tf.stack(casted_inp_parameters, axis=2)[0]
+    
+    mask = tf.sparse.to_dense(sequence['mask'])
+    mask = tf.cast(mask, tf.bool)
+            
+    y = context['label']
+    y_one_hot = tf.one_hot(y, tf.cast(context['n_classes'], tf.int32))
+    
+    return sequence, y_one_hot, mask
 
 def load_record(path, batch_size, standardize=False):
     """ Data loader for irregular time series with masking"
@@ -124,7 +118,7 @@ def load_record(path, batch_size, standardize=False):
         [tensorflow dataset] -- [batches to feed the model]
     """
     dataset = tf.data.TFRecordDataset(path)
-    dataset = dataset.map(lambda x: read_tfrecord(x), 
+    dataset = dataset.map(lambda x: get_sample(x), 
                           num_parallel_calls=tf.data.experimental.AUTOTUNE)
     # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#cache
     dataset = dataset.cache() 
