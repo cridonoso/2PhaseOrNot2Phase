@@ -108,7 +108,7 @@ def get_sample(sample):
     x = standardize(x, 0)
 
     mask = tf.sparse.to_dense(sequence['mask'])
-    mask = tf.cast(mask, tf.bool)
+    mask = tf.cast(mask, tf.float32)
     mask = tf.squeeze(mask)
 
     y = context['label']
