@@ -69,8 +69,6 @@ def create_record(light_curves, labels, masks, oids, path=''):
 
 def standardize(tensor, axis=0):
     mean_value = tf.reduce_mean(tensor, axis, name='mean_value')
-    print(tensor)
-    print(mean_value)
     normed = tensor - tf.expand_dims(mean_value, 0)
     return normed
 
