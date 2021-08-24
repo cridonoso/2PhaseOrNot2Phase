@@ -1,4 +1,4 @@
-import tensorflow as tf 
+import tensorflow as tf
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.layers import LayerNormalization, LSTMCell, RNN
 import time
@@ -8,22 +8,22 @@ from .tools import mask_pred, add_scalar_log
 
 class LSTMClassifier(tf.keras.Model):
 
-    def __init__(self, units, n_classes, dropout=0.5, name='phased'):
+    def __init__(self, units, n_classes, dropout=0.5, lr=1e-3, name='phased'):
         super(LSTMClassifier, self).__init__()
         self._units = units
         self._name  = name
-        
+
         self.lstm_0 = LSTMCell(self._units, name='rnn_0')
         self.lstm_1 = LSTMCell(self._units, name='rnn_1')
-        
+
         self.fc = tf.keras.layers.Dense(n_classes,
                                         activation='softmax',
                                         dtype='float32')
 
         self.dropout = tf.keras.layers.Dropout(dropout)
         self.norm_layer = LayerNormalization()
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
-        
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
+
     @tf.function
     def call(self, inputs, training=False):
         states_0 = [tf.zeros([inputs.shape[0], self._units]),
@@ -36,7 +36,7 @@ class LSTMClassifier(tf.keras.Model):
 
 
         x_t = tf.transpose(inputs, [1, 0, 2])
-        
+
         time_steps = tf.shape(x_t)[0]
 
         def compute(i, cur_state, out):
@@ -57,13 +57,13 @@ class LSTMClassifier(tf.keras.Model):
 
     @tf.function
     def get_loss(self, y_true, y_pred, masks):
-        y_expanded = tf.tile(tf.expand_dims(y_true, 1), 
+        y_expanded = tf.tile(tf.expand_dims(y_true, 1),
                              [1, y_pred.shape[1], 1])
         loss = categorical_crossentropy(y_expanded, y_pred)
         masked_loss = loss * masks
         cumulated_loss = tf.reduce_sum(masked_loss, 1)
         return tf.reduce_mean(cumulated_loss)
-    
+
     @tf.function
     def get_acc(self, y_true, y_pred, masks):
         last = tf.cast(tf.reduce_sum(masks, 1), tf.int32)-1
@@ -73,8 +73,8 @@ class LSTMClassifier(tf.keras.Model):
         return tf.reduce_mean(acc)
 
     def fit(self, train, val, epochs, patience=5, save_path='.'):
-        
-        # Tensorboard 
+
+        # Tensorboard
         train_log_dir = '{}/{}/logs/train'.format(save_path, self._name)
         test_log_dir  = '{}/{}/logs/val'.format(save_path, self._name)
         train_summary_writer = tf.summary.create_file_writer(train_log_dir)
@@ -96,7 +96,7 @@ class LSTMClassifier(tf.keras.Model):
             self.load_ckpt(ckpts_path)
             print('[INFO] WEIGHTS SUCCEFULLY LOADED')
 
-            
+
         # Training variables
         best_loss = 9999999
         early_stop_count = 0
@@ -113,13 +113,13 @@ class LSTMClassifier(tf.keras.Model):
                     y_pred = self(train_batch[0], training=True)
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
                     acc_value = self.get_acc(train_batch[1], y_pred, train_batch[2])
-                
+
                 add_scalar_log(acc_value, train_summary_writer, iter_count, 'accuracy')
                 add_scalar_log(loss_value, train_summary_writer, iter_count, 'loss')
 
                 grads = tape.gradient(loss_value, self.trainable_weights)
                 self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
-                iter_count+=1 
+                iter_count+=1
 
             # =================================
             # ======== VALIDATION STEP ========
