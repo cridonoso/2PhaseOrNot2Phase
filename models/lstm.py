@@ -110,7 +110,9 @@ class LSTMClassifier(tf.keras.Model):
             # =================================
             for train_batch in train:
                 with tf.GradientTape() as tape:
+                    print(train_batch[0].shape)
                     y_pred = self(train_batch[0], training=True)
+
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
                     acc_value = self.get_acc(train_batch[1], y_pred, train_batch[2])
 
