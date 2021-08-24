@@ -121,7 +121,7 @@ def load_record(path, batch_size, take=1, standardize=False):
     Returns:
         [tensorflow dataset] -- [batches to feed the model]
     """
-    datasets = [tf.data.TFRecordDataset(x) for x in  os.listdir(path)]
+    datasets = [tf.data.TFRecordDataset(os.path.join(path, x)) for x in  os.listdir(path)]
     datasets = [dataset.repeat() for dataset in datasets]
     datasets = [dataset.map(get_sample) for dataset in datasets]
     datasets = [dataset.shuffle(batch_size, reshuffle_each_iteration=True) for dataset in datasets]
