@@ -12,11 +12,9 @@ except:
 	os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("dataset", "linear", "dataset (linear - macho - ogle - asas - css - gaia - wise)")
-flags.DEFINE_string("normalization", "n1", "Normalization approach according to the preprocessing step (n1 or n2)")
+flags.DEFINE_string("dataset", "./data/records/train", "path")
 flags.DEFINE_string("rnn_unit", "plstm", "Recurrent unit (lstm or plstm)")
-flags.DEFINE_integer("fold_n", 0, "Fold number whitin xvalidation.")
-flags.DEFINE_integer("batch_size", 400, "number of samples involved in a single forward-backward")
+flags.DEFINE_integer("batch_size", 256, "number of samples involved in a single forward-backward")
 flags.DEFINE_float('lr', 1e-3, "Learning rate")
 flags.DEFINE_integer("epochs", 2000, "Number of epochs")
 flags.DEFINE_integer("units", 256, "Number of neurons")
@@ -33,12 +31,11 @@ def main(argv):
 
 
 	n_classes = [len(b[1][0]) for b in train_batches.take(1)][0]
-	name = '{}/{}_{}'.format(FLAGS.dataset,	FLAGS.rnn_unit, FLAGS.units)
 
 	if FLAGS.rnn_unit == 'plstm':
-		model = PhasedClassifier(units=FLAGS.units, n_classes=n_classes, name=name, lr=FLAGS.lr)
+		model = PhasedClassifier(units=FLAGS.units, n_classes=n_classes, name=FLAGS.p, lr=FLAGS.lr)
 	if FLAGS.rnn_unit == 'lstm':
-		model = LSTMClassifier(units=FLAGS.units, n_classes=n_classes, name=name, lr=FLAGS.lr)
+		model = LSTMClassifier(units=FLAGS.units, n_classes=n_classes, name=FLAGS.p, lr=FLAGS.lr)
 
 
 	model.fit(train_batches,
