@@ -52,7 +52,7 @@ def create_record(light_curves, labels, masks, oids, path=''):
     '''
 
     n_classes = len(np.unique(labels))
-
+    os.makedirs(path, exist_ok=True)
     for unq_clss in np.unique(labels):
         class_lcs = light_curves[labels == unq_clss]
         class_oid = masks[labels == unq_clss]
