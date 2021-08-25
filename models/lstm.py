@@ -52,7 +52,9 @@ class LSTMClassifier(tf.keras.Model):
             (tf.constant(0), initial_state, tf.TensorArray(tf.float32, time_steps))
         )
 
-        return tf.transpose(out.stack(), [1,0,2])
+        y = out.stack()
+        tf.print(y.shape)
+        return tf.transpose(y, [1,0,2])
 
 
     @tf.function
