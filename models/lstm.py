@@ -53,7 +53,6 @@ class LSTMClassifier(tf.keras.Model):
         )
 
         y = out.stack()
-        tf.print(y.shape)
         return tf.transpose(y, [1,0,2])
 
 
@@ -61,6 +60,7 @@ class LSTMClassifier(tf.keras.Model):
     def get_loss(self, y_true, y_pred, masks):
         y_expanded = tf.tile(tf.expand_dims(y_true, 1),
                              [1, y_pred.shape[1], 1])
+        tf.print(y_expanded.shape)
         loss = categorical_crossentropy(y_expanded, y_pred)
         masked_loss = loss * masks
         cumulated_loss = tf.reduce_sum(masked_loss, 1)
