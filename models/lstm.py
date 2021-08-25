@@ -41,6 +41,7 @@ class LSTMClassifier(tf.keras.Model):
 
         def compute(i, cur_state, out):
             output_0, cur_state0 = self.lstm_0(x_t[i], cur_state[0])
+            tf.print(output_0)
             output_0 = self.norm_layer(output_0)
             output_1, cur_state1 = self.lstm_1(output_0, cur_state[1])
             output_2 = self.dropout(output_1)
@@ -58,8 +59,6 @@ class LSTMClassifier(tf.keras.Model):
 
     @tf.function
     def get_loss(self, y_true, y_pred, masks):
-        tf.print(y_true.shape)
-        tf.print(y_pred.shape)
         y_expanded = tf.tile(tf.expand_dims(y_true, 1),
                              [1, y_pred.shape[1], 1])
 
