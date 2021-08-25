@@ -42,7 +42,7 @@ class LSTMClassifier(tf.keras.Model):
         def compute(i, cur_state, out):
             output_0, cur_state0 = self.lstm_0(x_t[i], cur_state[0])
             # tf.print(output_0.shape)
-            # output_0 = self.norm_layer(output_0)
+            output_0 = self.norm_layer(tf.expand_dims(output_0, 2))
             output_1, cur_state1 = self.lstm_1(output_0, cur_state[1])
             output_2 = self.dropout(output_1)
             return tf.add(i, 1), (cur_state0, cur_state1), out.write(i, self.fc(output_2))
@@ -113,7 +113,6 @@ class LSTMClassifier(tf.keras.Model):
             # =================================
             for train_batch in train:
                 with tf.GradientTape() as tape:
-                    print(train_batch[0].shape)
                     y_pred = self(train_batch[0], training=True)
 
                     loss_value = self.get_loss(train_batch[1], y_pred, train_batch[2])
