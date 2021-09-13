@@ -67,11 +67,6 @@ def create_record(light_curves, labels, masks, oids, path=''):
 
                 writer.write(ex.SerializeToString())
 
-def standardize(tensor, axis=0):
-    mean_value = tf.reduce_mean(tensor, axis, name='mean_value')
-    normed = tensor - tf.expand_dims(mean_value, 0)
-    return normed
-
 def get_sample(sample):
     '''
     Read a serialized sample and convert it to tensor
@@ -105,7 +100,6 @@ def get_sample(sample):
         casted_inp_parameters.append(seq_dim)
 
     x = tf.stack(casted_inp_parameters, axis=2)[0]
-    x = standardize(x, 0)
 
     mask = tf.sparse.to_dense(sequence['mask'])
     mask = tf.cast(mask, tf.float32)
@@ -116,7 +110,7 @@ def get_sample(sample):
 
     return x, y_one_hot, mask
 
-def load_record(path, batch_size, take=1, standardize=False):
+def load_record(source, batch_size, take=1):
     """ Data loader for irregular time series with masking"
 
     Arguments:
@@ -127,12 +121,26 @@ def load_record(path, batch_size, take=1, standardize=False):
     Returns:
         [tensorflow dataset] -- [batches to feed the model]
     """
-    datasets = [tf.data.TFRecordDataset(os.path.join(path, x)) for x in  os.listdir(path)]
-    datasets = [dataset.repeat() for dataset in datasets]
-    datasets = [dataset.map(get_sample) for dataset in datasets]
-    datasets = [dataset.shuffle(batch_size, reshuffle_each_iteration=True) for dataset in datasets]
-    dataset = tf.data.experimental.sample_from_datasets(datasets)
-    dataset = dataset.batch(batch_size)
-    dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-    dataset = dataset.cache()
-    return dataset.take(take)
+    rec_paths = [os.path.join(source, x) for x in os.listdir(source)]
+
+    if take <= 0:
+        print('[INFO] No shuffle No Oversampling'.format(take))
+        dataset = tf.data.TFRecordDataset(rec_paths)
+        dataset = dataset.map(get_sample).cache()
+        dataset = dataset.batch(batch_size)
+        dataset = dataset.prefetch(2)
+        return dataset
+    else:
+        print('[INFO] Taking {} balanced batches'.format(take))
+        datasets = [tf.data.TFRecordDataset(x) for x in rec_paths]
+        datasets = [dataset.repeat() for dataset in datasets]
+        datasets = [dataset.map(get_sample) for dataset in datasets]
+        datasets = [dataset.shuffle(batch_size, reshuffle_each_iteration=True) for dataset in datasets]
+        dataset  = tf.data.experimental.sample_from_datasets(datasets)
+        dataset  = dataset.batch(batch_size)
+        dataset  = dataset.take(take)
+        #dataset  = dataset.cache()
+        dataset  = dataset.prefetch(2)
+        return dataset
+    
+    

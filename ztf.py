@@ -121,6 +121,8 @@ def pad_lightcurves(lightcurves, labels, oids, maxobs=200):
         splits_mask = np.split(base_mask, int(base_mask.shape[0]/maxobs))
 
         for s in range(len(splits_lc)):
+            if np.sum(splits_mask[s]) == 0:
+                continue
             new_lightcurves.append(splits_lc[s])
             new_labels.append(labels[k])
             masks.append(splits_mask[s])

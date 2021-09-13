@@ -155,7 +155,7 @@ class PhasedClassifier(tf.keras.Model):
                 print('EARLY STOPPING ACTIVATED')
                 break
 
-    def predict_proba(self, test_batches):
+    def predict_proba(self, test_batches, concat_batches=False):
         t0 = time.time()
         predictions = []
         true_labels = []
@@ -165,6 +165,10 @@ class PhasedClassifier(tf.keras.Model):
             true_labels.append(test_batch[1])
 
         t1 = time.time()
+        if concat_batches:
+            predictions = tf.concat(predictions, 0)
+            true_labels = tf.concat(true_labels, 0)
+ 
         print('runtime {:.2f}'.format((t1-t0)))
         return predictions, true_labels
 

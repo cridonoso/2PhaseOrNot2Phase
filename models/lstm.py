@@ -41,7 +41,6 @@ class LSTMClassifier(tf.keras.Model):
 
         def compute(i, cur_state, out):
             output_0, cur_state0 = self.lstm_0(x_t[i], cur_state[0])
-            # tf.print(output_0.shape)
             output_0 = self.norm_layer(output_0)
             output_1, cur_state1 = self.lstm_1(output_0, cur_state[1])
             output_2 = self.dropout(output_1)
@@ -106,7 +105,7 @@ class LSTMClassifier(tf.keras.Model):
         iter_count = 0 # each forward pass is an iteration
         curr_eta = 0.
         for epoch in range(epochs):
-            print('[INFO] RUNNING EPOCH {}/{} - EARLY STOP COUNTDOWN: {}'.format(epoch, epochs, patience-early_stop_count), end='\r')
+            print('[INFO] RUNNING EPOCH {}/{} - EARLY STOP: {}/{}'.format(epoch, epochs, early_stop_count, patience), end='\r')
 
             # =================================
             # ========= TRAINING STEP =========
@@ -157,20 +156,21 @@ class LSTMClassifier(tf.keras.Model):
                 print('EARLY STOPPING ACTIVATED')
                 break
 
-    def predict_proba(self, test_batches):
+    def predict_proba(self, test_batches, concat_batches=False):
         t0 = time.time()
         predictions = []
         true_labels = []
 
         for test_batch in test_batches:
-            y_pred = self(test_batch[0], test_batch[2])
+            y_pred = self(test_batch[0], training=False)
             predictions.append(mask_pred(y_pred, test_batch[2]))
             true_labels.append(test_batch[1])
 
         t1 = time.time()
         print('runtime {:.2f}'.format((t1-t0)))
-        # predictions = tf.concat(predictions, 0)
-        # true_labels = tf.concat(true_labels, 0)
+        if concat_batches:
+            predictions = tf.concat(predictions, 0)
+            true_labels = tf.concat(true_labels, 0)
         return predictions, true_labels
 
 

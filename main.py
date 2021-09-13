@@ -10,23 +10,23 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("dataset", "./data/records/train", "path")
-flags.DEFINE_string("p", "ztf", "experiment name")
-flags.DEFINE_string("rnn_unit", "plstm", "Recurrent unit (lstm or plstm)")
+flags.DEFINE_string("dataset", "./data/records/linear", "path")
+flags.DEFINE_string("p", "linear_lstm", "experiment name")
+flags.DEFINE_string("rnn_unit", "lstm", "Recurrent unit (lstm or plstm)")
 flags.DEFINE_integer("batch_size", 256, "number of samples involved in a single forward-backward")
 flags.DEFINE_float('lr', 1e-3, "Learning rate")
 flags.DEFINE_integer("epochs", 2000, "Number of epochs")
 flags.DEFINE_integer("units", 256, "Number of neurons")
-flags.DEFINE_integer("patience", 25, "Number of epochs to activate early stop")
-
+flags.DEFINE_integer("patience", 50, "Number of epochs to activate early stop")
+flags.DEFINE_integer("take", 1, "Number of batches for training")
 
 def main(argv):
-	train_batches = data.load_record(path='{}/train'.format(FLAGS.dataset),
+	train_batches = data.load_record(source='{}/train'.format(FLAGS.dataset),
 									batch_size=FLAGS.batch_size,
-									take=100)
-	val_batches   = data.load_record(path='{}/val'.format(FLAGS.dataset),
+									take=FLAGS.take)
+	val_batches   = data.load_record(source='{}/val'.format(FLAGS.dataset),
 	                                 batch_size=FLAGS.batch_size,
-									 take=100)
+									 take=FLAGS.take)
 
 
 	n_classes = [len(b[1][0]) for b in train_batches.take(1)][0]
@@ -44,4 +44,4 @@ def main(argv):
 			  save_path='./experiments/')
 
 if __name__ == '__main__':
-  app.run(main)
+    app.run(main)
