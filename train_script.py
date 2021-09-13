@@ -20,4 +20,4 @@ for unit_type in ['plstm', 'lstm']:
 	    print(e)
 
 	end = time. time()
-	print('{} fold_{} takes {}'.format(unit_type, fold_n,(end - start)))
+	print('{} takes {}'.format(unit_type, (end - start)))
