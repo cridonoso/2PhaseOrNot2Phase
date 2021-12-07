@@ -13,7 +13,7 @@ for unit_type in ['plstm', 'lstm']:
 							   --p {}_{} \
 							   --take 300'.format(dataset,
 						    			     	  unit_type,
-												  dataset, unit_type)
+												  dataset.split('/')[-1], unit_type)
 	try:
 	    subprocess.call(command1, shell=True)
 	except Exception as e:
