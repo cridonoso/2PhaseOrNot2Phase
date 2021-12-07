@@ -1,33 +1,8 @@
 import numpy as np
 import pandas as pd
 
-class_code = {
-            'AGN'	 :0,
-            'Blazar' :1,
-            'CV/Nova':2,
-            'Ceph'	 :3,
-            'DSCT'	 :4,
-            'EA'	 :5,
-            'EB/EW'	 :5,
-            'LPV'	 :6,
-            'NLAGN'	 :-1,
-            'NLQSO'	 :-1,
-            'Periodic-Other':7,
-            'QSO'	 :8,
-            'RRL'	 :9,
-            'RSCVn'	 :-1,
-            'SLSN'	 :10,
-            'SNII'	 :11,
-            'SNIIb'	 :11,
-            'SNIIn'	 :11,
-            'SNIa'	 :12,
-            'SNIbc'	 :13,
-            'TDE'	 :-1,
-            'YSO'	 :14,
-            'ZZ'	 :-1
-            }
 
-def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=1e6):
+def get_light_curves(metadata_df, detections, class_code, n_min=1):
     """Open a csv of ZTF detection and convert observation
     to a list of lightcurves
 
@@ -46,38 +21,21 @@ def get_light_curves(metapath, det_path, nondet_path='', chunks=True, chunksize=
     light_curves = []
     labels 		 = []
     oids 		 = []
-    metadata_df  = pd.read_csv(metapath)
 
-    if chunks:
-        for chunk in pd.read_csv(det_path, chunksize=chunksize, low_memory=False):
-            result = pd.merge(chunk[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid']],
-                              metadata_df[['oid', 'classALeRCE']],
-                              on='oid')
+    result = pd.merge(detections,
+                      metadata_df[['oid', 'alerceclass', 'partition']],
+                      on='oid')
 
-            objects = result.groupby('oid')
-
-            for object_id, serie in objects:
-                lc = serie.iloc[:, 1:-1]
-                label = serie.iloc[0, -1]
-                light_curves.append(lc)
-                labels.append(class_code[label])
-                oids.append(object_id)
-    else:
-        # ======== RAM expensive ==========
-        detections = pd.read_csv(det_path, low_memory=False)
-        result = pd.merge(detections[['oid', 'mjd', 'magpsf_corr', 'sigmapsf_corr', 'fid', 'rb', 'corrected']],
-                          metadata_df[['oid', 'classALeRCE']],
-                          on='oid')
-
-        objects = result.groupby('oid')
-        for object_id, serie in objects:
-            lc = serie.iloc[:, 1:-1]
-            label = serie.iloc[0, -1]
+    objects = result.groupby('oid')
+    for object_id, serie in objects:
+        lc = serie.iloc[:, 1:-2]
+        label = serie.iloc[0, -2]
+        if lc.shape[0] >= n_min:
             light_curves.append(lc.values)
-            labels.append(class_code[label])
+            labels.append(class_code.index(label))
             oids.append(object_id)
 
-    return light_curves, labels, oids
+    return np.array(light_curves), np.array(labels), np.array(oids, dtype='object')
 
 def pad_lightcurves(lightcurves, labels, oids, maxobs=200):
     ''' Take a list of lightcurves and pad them.
@@ -103,7 +61,7 @@ def pad_lightcurves(lightcurves, labels, oids, maxobs=200):
     new_labels = []
     masks = []
     new_oids = []
-    
+
     for k in range(n_samples):
         # === Check if times are sorted ====
         indices = np.argsort(lightcurves[k][...,0])
