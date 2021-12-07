@@ -105,7 +105,7 @@ class LSTMClassifier(tf.keras.Model):
         iter_count = 0 # each forward pass is an iteration
         curr_eta = 0.
         for epoch in range(epochs):
-            print('[INFO] RUNNING EPOCH {}/{} - EARLY STOP: {}/{}'.format(epoch, epochs, early_stop_count, patience), end='\r')
+            print('[INFO] RUNNING EPOCH {}/{} - EARLY STOP: {}/{}'.format(epoch, epochs, early_stop_count, patience))
 
             # =================================
             # ========= TRAINING STEP =========

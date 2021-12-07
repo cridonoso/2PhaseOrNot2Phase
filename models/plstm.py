@@ -1,7 +1,7 @@
 import tensorflow as tf
 import time
 
-from .layers.phased import PhasedLSTM 
+from .layers.phased import PhasedLSTM
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.layers import LayerNormalization
 from os import path
@@ -26,7 +26,7 @@ class PhasedClassifier(tf.keras.Model):
         self.dropout = tf.keras.layers.Dropout(dropout)
         self.norm_layer = LayerNormalization()
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
-        
+
     @tf.function
     def call(self, inputs, times, training=False):
         states_0 = (tf.zeros([inputs.shape[0], self._units]),
@@ -39,7 +39,7 @@ class PhasedClassifier(tf.keras.Model):
 
         x_t = tf.transpose(inputs, [1, 0, 2])
         t_t = tf.transpose(times, [1, 0])
-        
+
         time_steps = tf.shape(x_t)[0]
 
         def compute(i, cur_state, out):
@@ -59,7 +59,7 @@ class PhasedClassifier(tf.keras.Model):
 
     @tf.function
     def get_loss(self, y_true, y_pred, masks):
-        y_expanded = tf.tile(tf.expand_dims(y_true, 1), 
+        y_expanded = tf.tile(tf.expand_dims(y_true, 1),
                              [1, y_pred.shape[1], 1])
         loss = categorical_crossentropy(y_expanded, y_pred)
         masked_loss = loss * masks
@@ -76,7 +76,7 @@ class PhasedClassifier(tf.keras.Model):
 
     def fit(self, train, val, epochs, patience=5, save_path='.', finetunning=False):
 
-        # Tensorboard 
+        # Tensorboard
         train_log_dir = '{}/{}/logs/train'.format(save_path, self._name)
         test_log_dir  = '{}/{}/logs/val'.format(save_path, self._name)
         train_summary_writer = tf.summary.create_file_writer(train_log_dir)
@@ -105,7 +105,7 @@ class PhasedClassifier(tf.keras.Model):
         iter_count = 0 # each forward pass is an iteration
         curr_eta = 0.
         for epoch in range(epochs):
-            print('[INFO] RUNNING EPOCH {}/{} - EARLY STOP COUNTDOWN: {}'.format(epoch, epochs, patience-early_stop_count), end='\r')
+            print('[INFO] RUNNING EPOCH {}/{} - EARLY STOP COUNTDOWN: {}'.format(epoch, epochs, patience-early_stop_count))
             # =================================
             # ========= TRAINING STEP =========
             # =================================
@@ -168,7 +168,7 @@ class PhasedClassifier(tf.keras.Model):
         if concat_batches:
             predictions = tf.concat(predictions, 0)
             true_labels = tf.concat(true_labels, 0)
- 
+
         print('runtime {:.2f}'.format((t1-t0)))
         return predictions, true_labels
 
